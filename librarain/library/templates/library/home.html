@@ -1,0 +1,177 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library Management System</title>
+    <link rel="stylesheet" href="{% static 'library/main.css' %}">
+</head>
+
+<body>
+    <div class="top-banner">
+        <p>Monday - Saturday, 8AM to 10PM</p>
+    </div>
+
+    <nav class="navigation">
+        <div class="container">
+            <a href="#" class="logo">
+                <span class="logo-text">L</span>
+                <span class="logo-text">I</span>
+                <span class="logo-text">B</span>
+                <span class="logo-text">R</span>
+                <span class="logo-text">A</span>
+                <span class="logo-text">R</span>
+                <span class="logo-text">Y</span>
+                <span class="logo-text">&nbsp;</span>
+                <span class="logo-text">M</span>
+                <span class="logo-text">A</span>
+                <span class="logo-text">N</span>
+                <span class="logo-text">A</span>
+                <span class="logo-text">G</span>
+                <span class="logo-text">E</span>
+                <span class="logo-text">M</span>
+                <span class="logo-text">E</span>
+                <span class="logo-text">N</span>
+                <span class="logo-text">T</span>
+                <span class="logo-text">&nbsp;</span>
+                <span class="logo-text">S</span>
+                <span class="logo-text">Y</span>
+                <span class="logo-text">S</span>
+                <span class="logo-text">T</span>
+                <span class="logo-text">E</span>
+                <span class="logo-text">M</span>
+            </a>
+            <div class="nav-links">
+                <a href="#">HOME</a>
+                <a href="#">ABOUT</a>
+                <a href="#">CONTACT</a>
+                <a href="#" class="button">Student Login</a>
+                <a href="#" class="button">Admin Login</a>
+            </div>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="hero-content">
+            <h1>
+                <span class="moving-text">L</span>
+                <span class="moving-text">i</span>
+                <span class="moving-text">b</span>
+                <span class="moving-text">r</span>
+                <span class="moving-text">a</span>
+                <span class="moving-text">r</span>
+                <span class="moving-text">y</span>
+                <span class="moving-text">&nbsp;</span>
+                <span class="moving-text">M</span>
+                <span class="moving-text">a</span>
+                <span class="moving-text">n</span>
+                <span class="moving-text">a</span>
+                <span class="moving-text">g</span>
+                <span class="moving-text">e</span>
+                <span class="moving-text">m</span>
+                <span class="moving-text">e</span>
+                <span class="moving-text">n</span>
+                <span class="moving-text">t</span>
+                <span class="moving-text">&nbsp;</span>
+                <span class="moving-text">S</span>
+                <span class="moving-text">y</span>
+                <span class="moving-text">s</span>
+                <span class="moving-text">t</span>
+                <span class="moving-text">e</span>
+                <span class="moving-text">m</span>
+            </h1>
+            <p>"Freedom to read, hear, view, think @ your library."</p>
+            <a href="#" class="button">Start SLMS</a>
+        </div>
+    </section>
+
+    <section class="features">
+        <div class="container">
+            <h2 style="text-align: center; margin-bottom: 40px;">AI-Powered Features</h2>
+            <div class="features-container">
+                <div class="feature-card">
+                    <div class="feature-icon">📚</div>
+                    <h3>Optical Character Recognition</h3>
+                    <p>Our system uses advanced OCR technology to extract student details when books are borrowed, making the process seamless and efficient.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔍</div>
+                    <h3>Book Recommendation System</h3>
+                    <p>Discover new books tailored to your interests with our AI-powered recommendation system that expands your knowledge horizons.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">👤</div>
+                    <h3>Face Recognition System</h3>
+                    <p>Secure and convenient validation process for issuing and renewing books through facial recognition and ID card verification.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="features" style="background-color: #f5f5f5;">
+        <div class="container">
+            <h2 style="text-align: center; margin-bottom: 40px;">Our Library Spaces</h2>
+            
+            <div class="dual-image-section">
+                <div class="image-box">
+                    <img src="{% static 'images/library-reading.png' %}" alt="Library Reading Area">
+                    <div class="image-caption">
+                        <h3>Modern Reading Areas</h3>
+                        <p>Comfortable spaces designed for focused study and research</p>
+                    </div>
+                </div>
+                <div class="image-box">
+                    <img src="{% static 'images/library-tech.jpg' %}" alt="Library Technology Center">
+                    <div class="image-caption">
+                        <h3>Technology Center</h3>
+                        <p>Access to computers and digital resources for all students</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 50px;">
+                <h2 style="margin-bottom: 30px;">Our Collections</h2>
+                <img src="{% static 'images/library-collection.jpg' %}" alt="Library Book Collection" class="library-image">
+                <div style="text-align: center; margin-top: 30px;">
+                    <p style="margin-bottom: 20px;">Browse our extensive collection of books, journals, and digital resources to support your academic needs.</p>
+                    <a href="#" class="button">Explore Catalog</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>Quick Links</h3>
+                    <a href="#">Home</a>
+                    <a href="#">About Us</a>
+                    <a href="#">Contact</a>
+                    <a href="#">Book Catalog</a>
+                    <a href="#">Student Portal</a>
+                </div>
+                <div class="footer-section">
+                    <h3>Contact Us</h3>
+                    <p>Email: library@example.com</p>
+                    <p>Phone: +91 0000000000</p>
+                    <p>Address: University Campus, City</p>
+                </div>
+                <div class="footer-section">
+                    <h3>Hours of Operation</h3>
+                    <p>Monday - Friday: 8AM - 10PM</p>
+                    <p>Saturday: 9AM - 8PM</p>
+                    <p>Sunday: Closed</p>
+                </div>
+            </div>
+            <div class="copyright">
+                <p>&copy; 2025 Library Management System. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{% static 'library/javascripts/script.js' %}"></script>
+</body>
+</html>
