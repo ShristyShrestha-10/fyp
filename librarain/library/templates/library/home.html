@@ -83,7 +83,18 @@
                 <span class="moving-text">m</span>
             </h1>
             <p>"Freedom to read, hear, view, think @ your library."</p>
-            <a href="#" class="button">Start SLMS</a>
+            <a href="{% url 'start_opencv' %}" class="button" id="start-button">Start ID Card Scanner</a>
+            <div id="status-message"></div>
+            <div id="scanner-instructions" class="instructions" style="display: none;">
+                <p>✓ Camera activated</p>
+                <p>• Place your ID card within the green rectangle</p>
+                <p>• Press 'Q' to close the scanner</p>
+            </div>
+            {% if error %}
+            <div class="error-message">
+                {{ error }}
+            </div>
+            {% endif %}
         </div>
     </section>
 
@@ -109,7 +120,6 @@
             </div>
         </div>
     </section>
-
     <section class="features" style="background-color: #f5f5f5;">
         <div class="container">
             <h2 style="text-align: center; margin-bottom: 40px;">Our Library Spaces</h2>
@@ -141,7 +151,6 @@
             </div>
         </div>
     </section>
-
     <footer class="footer">
         <div class="container">
             <div class="footer-content">

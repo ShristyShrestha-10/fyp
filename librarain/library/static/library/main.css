@@ -282,7 +282,6 @@ body {
 .image-box:hover img {
     transform: scale(1.05);
 }
-
 .image-caption {
     position: absolute;
     bottom: 0;
@@ -370,6 +369,60 @@ body {
     color: #aaa;
 }
 
+/* Library Spaces Section */
+.library-spaces {
+    padding: 4rem 2rem;
+    background: #f5f5f5;
+    margin-top: 3rem;  /* Add spacing from previous section */
+}
+
+.library-spaces h2 {
+    font-size: 2.5rem;
+    color: #2d3748;
+    margin-bottom: 2rem;
+    position: absolute;
+    top: -3rem;  /* Position the title above the images */
+    left: 0;
+}
+
+.spaces-grid {
+    position: relative;  /* For absolute positioning of the title */
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2.5rem;  /* Increase gap between items */
+    max-width: 1200px;
+    margin: 4rem auto 0;  /* Add top margin for title space */
+    padding-top: 1rem;
+}
+
+/* Collections Section */
+.collections-section {
+    padding: 4rem 2rem;
+    background: #f9fafb;
+    margin-top: 4rem;  /* Add spacing between sections */
+}
+
+.collections-section h2 {
+    font-size: 2.5rem;
+    color: #2d3748;
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.collections-container {
+    position: relative;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.collections-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2.5rem;  /* Increase gap between items */
+    margin-top: 2rem;
+}
+
+/* Responsive adjustments */
 @media (max-width: 768px) {
     .container {
         flex-direction: column;
@@ -399,4 +452,116 @@ body {
         width: 100%;
         margin-bottom: 20px;
     }
+
+    .library-spaces,
+    .collections-section {
+        padding: 2rem 1rem;
+        margin-top: 2rem;
+    }
+    
+    .library-spaces h2,
+    .collections-section h2 {
+        font-size: 2rem;
+    }
+    
+    .spaces-grid,
+    .collections-grid {
+        gap: 1.5rem;
+    }
+}
+
+/* Add these styles for the start button */
+.button#start-button {
+    transition: all 0.3s ease;
+}
+
+.button#start-button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.button#start-button.error {
+    background-color: #dc3545;
+}
+
+.button#start-button.success {
+    background-color: #28a745;
+}
+
+/* Add these at the end of your CSS file */
+
+#status-message {
+    margin-top: 1rem;
+}
+
+.success-message {
+    color: #155724;
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    padding: 10px;
+    border-radius: 4px;
+    margin-top: 10px;
+}
+
+.error-message {
+    color: #721c24;
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    padding: 10px;
+    border-radius: 4px;
+    margin-top: 10px;
+}
+
+.button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+#start-button {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+#start-button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+#start-button.success {
+    background-color: #28a745;
+}
+
+#start-button.error {
+    background-color: #dc3545;
+}
+
+.success-message {
+    color: #155724;
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    padding: 10px;
+    border-radius: 4px;
+    margin-top: 15px;
+    animation: fadeIn 0.3s ease;
+}
+
+.error-message {
+    color: #721c24;
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    padding: 10px;
+    border-radius: 4px;
+    margin-top: 15px;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+#status-message {
+    min-height: 60px;
+    margin-top: 15px;
 }
