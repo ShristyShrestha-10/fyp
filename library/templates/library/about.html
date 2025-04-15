@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About - LibrarAin</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+        }
+        
+        .top-bar {
+            background-color: #8e44ad;
+            color: white;
+            text-align: center;
+            padding: 10px;
+            font-size: 14px;
+        }
+        
+        .header {
+            background-color: white;
+            padding: 15px 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .logo {
+            color: #00a2c7;
+            font-size: 24px;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 30px;
+        }
+        
+        .nav-links a {
+            text-decoration: none;
+            color: #333;
+            font-weight: 500;
+            padding: 8px 20px;
+            background-color: #00a2c7;
+            color: white;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+        
+        .nav-links a:hover {
+            background-color: #0090b3;
+        }
+        
+        .login-buttons,
+        .login-btn,
+        .nav-links a.active {
+            display: none;
+        }
+        
+        .hero {
+            background: linear-gradient(135deg, #00a2c7, #8e44ad);
+            background-size: cover;
+            background-position: center;
+            padding: 60px 5%;
+            text-align: center;
+        }
+        
+        .hero h1 {
+            font-size: 36px;
+            margin-bottom: 20px;
+            color: white;
+        }
+        
+        .hero p {
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.9);
+            max-width: 800px;
+            margin: 0 auto 30px;
+            line-height: 1.6;
+        }
+        
+        .main-content {
+            padding: 60px 5%;
+            background-color: white;
+        }
+        
+        .section-title {
+            text-align: center;
+            font-size: 28px;
+            margin-bottom: 50px;
+            color: #333;
+            position: relative;
+        }
+        
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 3px;
+            background-color: #00a2c7;
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 60px;
+        }
+        
+        .feature-card {
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .feature-icon {
+            font-size: 48px;
+            color: #00a2c7;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .feature-title {
+            font-size: 20px;
+            margin-bottom: 15px;
+            color: #333;
+            text-align: center;
+        }
+        
+        .feature-desc {
+            color: #666;
+            line-height: 1.6;
+        }
+        
+        .workflow {
+            margin-bottom: 60px;
+        }
+        
+        .workflow-steps {
+            display: flex;
+            justify-content: space-between;
+            position: relative;
+            margin: 60px 0;
+        }
+        
+        .workflow-steps::before {
+            content: '';
+            position: absolute;
+            top: 50px;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background-color: #e0e0e0;
+            z-index: 1;
+        }
+        
+        .step {
+            width: 22%;
+            text-align: center;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .step-number {
+            width: 100px;
+            height: 100px;
+            background-color: #00a2c7;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            font-weight: bold;
+            margin: 0 auto 20px;
+        }
+        
+        .step-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .step-desc {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .team-section {
+            margin-bottom: 60px;
+        }
+        
+        .mission {
+            background-color: #f9f9f9;
+            padding: 60px 5%;
+            text-align: center;
+        }
+        
+        .mission h2 {
+            font-size: 28px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        .mission p {
+            max-width: 800px;
+            margin: 0 auto;
+            color: #555;
+            line-height: 1.6;
+            font-size: 16px;
+        }
+        
+        .testimonials {
+            padding: 60px 5%;
+            background-color: white;
+        }
+        
+        .testimonial-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+        
+        .testimonial-card {
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .testimonial-text {
+            font-style: italic;
+            color: #555;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        
+        .testimonial-author {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .testimonial-role {
+            color: #777;
+            font-size: 14px;
+        }
+        
+        footer {
+            background-color: #333;
+            color: white;
+            padding: 40px 5% 20px;
+            text-align: center;
+        }
+        
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            max-width: 1200px;
+            margin: 0 auto 30px;
+        }
+        
+        .footer-section {
+            width: 30%;
+            min-width: 200px;
+            margin-bottom: 20px;
+        }
+        
+        .footer-section h3 {
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .footer-section p, .footer-section a {
+            color: #bbb;
+            line-height: 1.6;
+            text-decoration: none;
+            display: block;
+            margin-bottom: 8px;
+        }
+        
+        .footer-section a:hover {
+            color: white;
+        }
+        
+        .copyright {
+            border-top: 1px solid #555;
+            padding-top: 20px;
+            font-size: 14px;
+            color: #999;
+        }
+        
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                padding: 15px;
+            }
+            
+            .logo {
+                margin-bottom: 15px;
+            }
+            
+            .nav-links {
+                margin-bottom: 15px;
+                gap: 15px;
+            }
+            
+            .workflow-steps {
+                flex-direction: column;
+                margin: 30px 0;
+            }
+            
+            .workflow-steps::before {
+                display: none;
+            }
+            
+            .step {
+                width: 100%;
+                margin-bottom: 30px;
+            }
+            
+            .footer-section {
+                width: 100%;
+                text-align: center;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle student login button
+            document.querySelector('.login-btn:nth-child(1)').addEventListener('click', function() {
+                window.location.href = '/student-login/';
+            });
+
+            // Handle admin login button
+            document.querySelector('.login-btn:nth-child(2)').addEventListener('click', function() {
+                window.location.href = '/admin-login/';
+            });
+        });
+    </script>
+</head>
+<body>
+    <div class="top-bar">
+        Monday - Saturday, 8AM to 10PM
+    </div>
+    
+    <header class="header">
+        <div class="logo">LIBRARY MANAGEMENT SYSTEM</div>
+        <div class="nav-links">
+            <a href="/" class="back-btn">Back to Home</a>
+        </div>
+    </header>
+    
+    <section class="hero">
+        <h1>About LibrarAin</h1>
+        <p>The next generation AI-powered library management system that revolutionizes how students interact with library resources, using facial recognition, OCR technology, and smart recommendation engines.</p>
+    </section>
+    
+    <section class="main-content">
+        <h2 class="section-title">Our Smart Features</h2>
+        
+        <div class="features">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-camera"></i>
+                </div>
+                <h3 class="feature-title">Face Recognition System</h3>
+                <p class="feature-desc">Our advanced facial recognition technology provides a secure and convenient validation process for issuing and renewing books, eliminating the need for physical ID cards and reducing wait times.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-file-alt"></i>
+                </div>
+                <h3 class="feature-title">Optical Character Recognition</h3>
+                <p class="feature-desc">LibrarAin uses state-of-the-art OCR technology to extract student details automatically when books are borrowed, making the entire process seamless and efficient while reducing manual data entry errors.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-lightbulb"></i>
+                </div>
+                <h3 class="feature-title">Smart Book Recommendations</h3>
+                <p class="feature-desc">Discover new books tailored to your interests with our AI-powered recommendation system that analyzes your reading history and preferences to expand your knowledge horizons.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-envelope"></i>
+                </div>
+                <h3 class="feature-title">Automated Notifications</h3>
+                <p class="feature-desc">Never miss a return date again. Our system sends automated email notifications for due dates, overdue books, and successful transactions, helping students avoid late fees.</p>
+            </div>
+        </div>
+        
+        <h2 class="section-title">How LibrarAin Works</h2>
+        
+        <div class="workflow">
+            <div class="workflow-steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <h3 class="step-title">Registration</h3>
+                    <p class="step-desc">Students register through webcam verification. The system captures facial data and scans ID cards using EasyOCR to extract email, faculty, and name information.</p>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <h3 class="step-title">Book Borrowing</h3>
+                    <p class="step-desc">Students are verified via facial recognition. Book details including author, title, and ISBN are captured and stored in the system with automatic checkout.</p>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <h3 class="step-title">Book Return</h3>
+                    <p class="step-desc">The validation process confirms student identity and book condition. The return is recorded and the book returns to circulation.</p>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <h3 class="step-title">Smart Notifications</h3>
+                    <p class="step-desc">Students receive email notifications for due dates, successful returns, and personalized book recommendations based on their reading history.</p>
+                </div>
+            </div>
+        </div>
+        
+        <h2 class="section-title">Technologies We Use</h2>
+        
+        <div class="features">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-brain"></i>
+                </div>
+                <h3 class="feature-title">Computer Vision</h3>
+                <p class="feature-desc">Utilizing advanced computer vision algorithms for accurate facial recognition and authentication at every checkpoint.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-desktop"></i>
+                </div>
+                <h3 class="feature-title">EasyOCR</h3>
+                <p class="feature-desc">A powerful optical character recognition tool that enables our system to extract text data from ID cards and book details with high accuracy.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-database"></i>
+                </div>
+                <h3 class="feature-title">Machine Learning</h3>
+                <p class="feature-desc">Our recommendation engine uses collaborative filtering and content-based approaches to suggest books that match student interests.</p>
+            </div>
+        </div>
+    </section>
+    
+    <section class="mission">
+        <h2>Our Mission</h2>
+        <p>At LibrarAin, our mission is to transform the traditional library experience into a modern, efficient, and personalized journey. We aim to eliminate manual processes, reduce wait times, and create a seamless interaction between students and library resources. By leveraging cutting-edge AI technologies, we're not just managing books - we're fostering a community of knowledge sharing and discovery.</p>
+    </section>
+    
+    <section class="testimonials">
+        <h2 class="section-title">What People Are Saying</h2>
+        
+        <div class="testimonial-cards">
+            <div class="testimonial-card">
+                <p class="testimonial-text">"LibrarAin has completely transformed how our library functions. Students love the face recognition system, and our staff has more time to focus on helping students rather than processing checkouts."</p>
+                <p class="testimonial-author">Dr. Sarah Johnson</p>
+                <p class="testimonial-role">Library Director</p>
+            </div>
+            
+            <div class="testimonial-card">
+                <p class="testimonial-text">"The book recommendations are spot on! I've discovered so many great reads that I would have never found on my own. Plus, the automatic reminders have saved me from late fees multiple times."</p>
+                <p class="testimonial-author">Michael Chang</p>
+                <p class="testimonial-role">Computer Science Student</p>
+            </div>
+            
+            <div class="testimonial-card">
+                <p class="testimonial-text">"Implementation was smooth and the support team was incredibly helpful. The system has increased our circulation numbers and student engagement with the library."</p>
+                <p class="testimonial-author">Lisa Rodriguez</p>
+                <p class="testimonial-role">University Librarian</p>
+            </div>
+        </div>
+    </section>
+    
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>LibrarAin</h3>
+                <p>An AI-powered library management system that's revolutionizing how students interact with library resources.</p>
+            </div>
+            
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <a href="/">Home</a>
+                <a href="/about">About</a>
+                <a href="/services">Services</a>
+                <a href="#">Contact</a>
+            </div>
+            
+            <div class="footer-section">
+                <h3>Contact Us</h3>
+                <p>Email: info@librain.com</p>
+                <p>Phone: (123) 456-7890</p>
+                <p>Address: 123 Library Lane, Knowledge City</p>
+            </div>
+        </div>
+        
+        <div class="copyright">
+            &copy; 2025 LibrarAin - AI-Powered Library Management System. All rights reserved.
+        </div>
+    </footer>
+</body>
+</html> 

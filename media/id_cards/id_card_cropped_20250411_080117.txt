@@ -1,0 +1,7 @@
+User:
+
+
+
+
+Please extract the 18 digit number from the ID card. Sample format: 0012272369 187 , 17137. 
+Assistant: 0012272369 187.

@@ -1,0 +1,331 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library Management System</title>
+    <link rel="stylesheet" href="{% static 'library/main.css' %}">
+    <style>
+        /* Remove any newsletter-related styles */
+        .newsletter-group,
+        .newsletter-content,
+        .modal-overlay,
+        .newsletter-popup,
+        div[class*="newsletter"] {
+            display: none !important;
+        }
+
+        /* Login Button Styles */
+        .nav-links .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .nav-links form button.button:hover {
+            background-color: #34495e !important;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(44, 62, 80, 0.3);
+        }
+
+        .nav-links a.button:hover {
+            background-color: #45a049 !important;
+        }
+
+        .video-container {
+            display: none;
+            max-width: 960px;
+            width: 90%;
+            margin: 20px auto;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        #video-feed {
+            width: 100%;
+            height: auto;
+            display: block;
+            aspect-ratio: 4/3;
+        }
+
+        #start-button {
+            display: block;
+            margin: 20px auto;
+            padding: 12px 30px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        #start-button:hover {
+            background-color: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        #start-button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="top-banner">
+        <p>Monday - Saturday, 8AM to 10PM</p>
+    </div>
+
+    <nav class="navigation">
+        <div class="container">
+            <a href="#" class="logo">
+                <span class="logo-text">L</span>
+                <span class="logo-text">I</span>
+                <span class="logo-text">B</span>
+                <span class="logo-text">R</span>
+                <span class="logo-text">A</span>
+                <span class="logo-text">R</span>
+                <span class="logo-text">Y</span>
+                <span class="logo-text">&nbsp;</span>
+                <span class="logo-text">M</span>
+                <span class="logo-text">A</span>
+                <span class="logo-text">N</span>
+                <span class="logo-text">A</span>
+                <span class="logo-text">G</span>
+                <span class="logo-text">E</span>
+                <span class="logo-text">M</span>
+                <span class="logo-text">E</span>
+                <span class="logo-text">N</span>
+                <span class="logo-text">T</span>
+                <span class="logo-text">&nbsp;</span>
+                <span class="logo-text">S</span>
+                <span class="logo-text">Y</span>
+                <span class="logo-text">S</span>
+                <span class="logo-text">T</span>
+                <span class="logo-text">E</span>
+                <span class="logo-text">M</span>
+            </a>
+            <div class="nav-links">
+                <a href="{% url 'home' %}">HOME</a>
+                <a href="{% url 'about' %}">ABOUT</a>
+                <a href="{% url 'main_page' %}">SERVICES</a>
+                <a href="#" class="button" style="margin-right: 15px; background-color: #4CAF50;">Student Login</a>
+                <form action="{% url 'admin_login' %}" method="get" style="display: inline;">
+                    <button type="submit" class="button" style="
+                        background-color: #2c3e50; 
+                        border: none; 
+                        cursor: pointer; 
+                        padding: 10px 25px; 
+                        color: white; 
+                        border-radius: 4px;
+                        font-weight: 500;
+                        transition: all 0.3s ease;
+                        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 8px;
+                    ">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 4px;">
+                            <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/>
+                        </svg>
+                        Admin Login
+                    </button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Library Management System</h1>
+            <p>"Freedom to read, hear, view, think @ your library."</p>
+            
+            <button id="start-button" onclick="startScanner()">Start Scanner</button>
+            <div id="video-container" class="video-container">
+                <img id="video-feed" alt="Camera Feed">
+            </div>
+        </div>
+    </section>
+
+    <section class="features">
+        <div class="container">
+            <h2 style="text-align: center; margin-bottom: 40px;">AI-Powered Features</h2>
+            <div class="features-container">
+                <div class="feature-card">
+                    <div class="feature-icon">📚</div>
+                    <h3>Optical Character Recognition</h3>
+                    <p>Our system uses advanced OCR technology to extract student details when books are borrowed, making the process seamless and efficient.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔍</div>
+                    <h3>Book Recommendation System</h3>
+                    <p>Discover new books tailored to your interests with our AI-powered recommendation system that expands your knowledge horizons.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">👤</div>
+                    <h3>Face Recognition System</h3>
+                    <p>Secure and convenient validation process for issuing and renewing books through facial recognition and ID card verification.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section class="features" style="background-color: #f5f5f5;">
+        <div class="container">
+            <h2 style="text-align: center; margin-bottom: 40px;">Our Library Spaces</h2>
+            
+            <div class="dual-image-section">
+                <div class="image-box">
+                    <img src="{% static 'images/library-reading.png' %}" alt="Library Reading Area">
+                    <div class="image-caption">
+                        <h3>Modern Reading Areas</h3>
+                        <p>Comfortable spaces designed for focused study and research</p>
+                    </div>
+                </div>
+                <div class="image-box">
+                    <img src="{% static 'images/library-tech.jpg' %}" alt="Library Technology Center">
+                    <div class="image-caption">
+                        <h3>Technology Center</h3>
+                        <p>Access to computers and digital resources for all students</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 50px;">
+                <h2 style="margin-bottom: 30px;">Our Collections</h2>
+                <img src="{% static 'images/library-collection.jpg' %}" alt="Library Book Collection" class="library-image">
+                <div style="text-align: center; margin-top: 30px;">
+                    <p style="margin-bottom: 20px;">Browse our extensive collection of books, journals, and digital resources to support your academic needs.</p>
+                    <a href="#" class="button">Explore Catalog</a>
+                </div>
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>Quick Links</h3>
+                    <a href="{% url 'home' %}">Home</a>
+                    <a href="{% url 'about' %}">About Us</a>
+                    <a href="#">Contact</a>
+                    <a href="#">Book Catalog</a>
+                    <a href="#">Student Portal</a>
+                </div>
+                <div class="footer-section">
+                    <h3>Contact Us</h3>
+                    <p>Email: library@example.com</p>
+                    <p>Phone: +91 0000000000</p>
+                    <p>Address: University Campus, City</p>
+                </div>
+                <div class="footer-section">
+                    <h3>Hours of Operation</h3>
+                    <p>Monday - Friday: 8AM - 10PM</p>
+                    <p>Saturday: 9AM - 8PM</p>
+                    <p>Sunday: Closed</p>
+                </div>
+            </div>
+            <div class="copyright">
+                <p>&copy; 2025 Library Management System. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+    let isScannerActive = false;
+
+    function startScanner() {
+        if (isScannerActive) return;
+        
+        const button = document.getElementById('start-button');
+        const videoContainer = document.getElementById('video-container');
+        const videoFeed = document.getElementById('video-feed');
+
+        button.disabled = true;
+        button.textContent = 'Starting...';
+        
+        // Show video container immediately
+        videoContainer.style.display = 'block';
+        videoFeed.src = "{% url 'video_feed' camera_type='id_card' %}";
+        
+        // Set up event listeners
+        videoFeed.onload = function() {
+            button.textContent = 'Scanner Active';
+            button.disabled = false;
+            isScannerActive = true;
+            document.addEventListener('keydown', handleKeyPress);
+        };
+        
+        videoFeed.onerror = function() {
+            stopScanner();
+            alert('Failed to start camera. Please check your camera connection.');
+        };
+    }
+
+    function stopScanner() {
+        if (!isScannerActive) return;
+
+        const button = document.getElementById('start-button');
+        const videoContainer = document.getElementById('video-container');
+        const videoFeed = document.getElementById('video-feed');
+
+        // Stop the video feed
+        videoFeed.src = '';
+        videoContainer.style.display = 'none';
+
+        // Reset button state
+        button.textContent = 'Start Scanner';
+        button.disabled = false;
+
+        // Clean up
+        document.removeEventListener('keydown', handleKeyPress);
+        isScannerActive = false;
+
+        // Send stop request to server
+        fetch('/stop-scanner/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            }
+        }).catch(error => console.error('Error stopping scanner:', error));
+    }
+
+    function handleKeyPress(event) {
+        if (event.key.toLowerCase() === 'q' && isScannerActive) {
+            stopScanner();
+        }
+    }
+
+    // Get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Clean up on page unload
+    window.addEventListener('beforeunload', function() {
+        if (isScannerActive) {
+            stopScanner();
+        }
+    });
+    </script>
+</body>
+</html>

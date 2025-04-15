@@ -1,0 +1,17 @@
+User:
+
+
+
+Please extract and list all the text information from this ID card. Include names, numbers, dates, and any other relevant information.
+Assistant: 0122228981 187, 17:17
+
+# Create the processor
+processor = IDCardProcessor()
+
+# Adjust brightness (range: -100 to 100)
+processor.set_brightness(50)  # Increase brightness
+processor.set_brightness(-30)  # Decrease brightness
+
+# Adjust contrast (range: 0.0 to 3.0)
+processor.set_contrast(1.5)  # Increase contrast
+processor.set_contrast(0.8)  # Decrease contrast

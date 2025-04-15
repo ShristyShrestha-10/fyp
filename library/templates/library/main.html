@@ -1,0 +1,271 @@
+{% extends 'library/base.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+    :root {
+        --primary: #1a73e8;
+        --secondary: #f8f9fa;
+        --success: #0f9d58;
+        --danger: #ea4335;
+        --info: #00bcd4;
+        --light: #f8f9fa;
+        --dark: #202124;
+        --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    body {
+        background-color: #f3f4f6;
+        color: #202124;
+        line-height: 1.6;
+    }
+    
+    .container {
+        max-width: 1200px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+    
+    .page-header {
+        text-align: center;
+        margin-bottom: 2.5rem;
+    }
+    
+    .page-title {
+        font-size: 2.2rem;
+        font-weight: 700;
+        color: var(--primary);
+        margin-bottom: 0.5rem;
+    }
+    
+    .page-subtitle {
+        font-size: 1.1rem;
+        color: #5f6368;
+    }
+    
+    .card {
+        background-color: white;
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        padding: 2rem;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .button-container {
+        display: grid;
+        grid-gap: 1rem;
+        margin-top: 2rem;
+    }
+    
+    .btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        padding: 1rem;
+        font-size: 1.1rem;
+        font-weight: 500;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-align: center;
+        color: white;
+        text-decoration: none;
+    }
+    
+    .btn i {
+        font-size: 1.3rem;
+    }
+    
+    .btn-success {
+        background-color: var(--success);
+    }
+    
+    .btn-success:hover {
+        background-color: #0a8549;
+        box-shadow: 0 4px 8px rgba(15, 157, 88, 0.3);
+    }
+    
+    .btn-danger {
+        background-color: var(--danger);
+    }
+    
+    .btn-danger:hover {
+        background-color: #d33426;
+        box-shadow: 0 4px 8px rgba(234, 67, 53, 0.3);
+    }
+    
+    .btn-info {
+        background-color: var(--info);
+    }
+    
+    .btn-info:hover {
+        background-color: #00a5b9;
+        box-shadow: 0 4px 8px rgba(0, 188, 212, 0.3);
+    }
+    
+    .stats-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1.5rem;
+        margin-top: 2rem;
+    }
+    
+    .stat-card {
+        background-color: white;
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        padding: 1.5rem;
+        text-align: center;
+        transition: transform 0.2s;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .stat-icon {
+        font-size: 2.5rem;
+        margin-bottom: 0.75rem;
+        color: var(--primary);
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        color: var(--dark);
+    }
+    
+    .stat-label {
+        font-size: 1rem;
+        color: #5f6368;
+    }
+    
+    .feature-card {
+        background-color: white;
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        transition: transform 0.2s;
+    }
+    
+    .feature-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .feature-icon {
+        font-size: 2rem;
+        color: var(--primary);
+        margin-bottom: 1rem;
+    }
+    
+    .feature-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: var(--dark);
+    }
+    
+    .feature-description {
+        color: #5f6368;
+        margin-bottom: 1rem;
+    }
+    
+    .feature-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--primary);
+        text-decoration: none;
+        font-weight: 500;
+    }
+    
+    .feature-link:hover {
+        text-decoration: underline;
+    }
+    
+    @media (max-width: 768px) {
+        .button-container {
+            grid-template-columns: 1fr;
+        }
+        
+        .stats-container {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="container">
+    <header class="page-header">
+        <h1 class="page-title">Library Management System</h1>
+        <p class="page-subtitle">Efficiently manage your library resources and services</p>
+    </header>
+    
+    <div class="card">
+        <div class="button-container">
+            <a href="{% url 'start_opencv' %}" class="btn btn-success">
+                <i class="fas fa-camera"></i>
+                Start SLMS
+            </a>
+            <a href="{% url 'recommendations' %}" class="btn btn-info">
+                <i class="fas fa-lightbulb"></i>
+                Book Recommendations
+            </a>
+        </div>
+    </div>
+    
+    <div class="stats-container">
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-book"></i>
+            </div>
+            <div class="stat-value">{{ total_books }}</div>
+            <div class="stat-label">Total Books</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-value">{{ total_members }}</div>
+            <div class="stat-label">Active Members</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-book-reader"></i>
+            </div>
+            <div class="stat-value">{{ books_borrowed }}</div>
+            <div class="stat-label">Books Borrowed</div>
+        </div>
+    </div>
+
+    <div class="features-section">
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fas fa-camera"></i>
+            </div>
+            <h3 class="feature-title">Smart Library Management System</h3>
+            <p class="feature-description">Use facial recognition technology to streamline library operations and enhance security.</p>
+            <a href="{% url 'start_opencv' %}" class="feature-link">
+                Start SLMS <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fas fa-lightbulb"></i>
+            </div>
+            <h3 class="feature-title">Book Recommendations</h3>
+            <p class="feature-description">Get personalized book recommendations based on your reading history and preferences.</p>
+            <a href="{% url 'recommendations' %}" class="feature-link">
+                View Recommendations <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %} 

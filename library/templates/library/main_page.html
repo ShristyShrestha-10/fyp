@@ -1,0 +1,29 @@
+{% extends 'library/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white text-center">
+                    <h2 class="mb-0">Library Management System</h2>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-3">
+                        <a href="{% url 'camera_feed' %}?type=borrow" class="btn btn-success btn-lg">
+                            <i class="fas fa-book"></i> Borrow Book
+                        </a>
+                        <a href="{% url 'camera_feed' %}?type=return" class="btn btn-danger btn-lg">
+                            <i class="fas fa-undo"></i> Return Book
+                        </a>
+                        <a href="{% url 'recommendations' %}" class="btn btn-info btn-lg text-white">
+                            <i class="fas fa-lightbulb"></i> Book Recommendations
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

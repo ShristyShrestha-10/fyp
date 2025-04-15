@@ -1,0 +1,6 @@
+User:
+
+
+
+Please extract and list all the text information from this ID card. Include names, numbers, dates, and any other relevant information.
+Assistant: [Name], [Number], [Date], [Other relevant information]

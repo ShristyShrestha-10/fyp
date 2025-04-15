@@ -1,0 +1,167 @@
+{% extends 'library/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Admin Dashboard</h1>
+    
+    <!-- Statistics Cards -->
+    <div class="row mt-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-primary mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Total Books</h5>
+                    <p class="card-text display-4">{{ total_books }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-success mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Total Students</h5>
+                    <p class="card-text display-4">{{ total_students }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-info mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Books Borrowed</h5>
+                    <p class="card-text display-4">{{ books_borrowed }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-danger mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Overdue Books</h5>
+                    <p class="card-text display-4">{{ overdue_books }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tables Section -->
+    <div class="row mt-4">
+        <!-- Recently Detected Books -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Recently Detected Books</h5>
+                </div>
+                <div class="card-body">
+                    {% if recently_detected %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Author</th>
+                                    <th>ISBN</th>
+                                    <th>Tag ID</th>
+                                    <th>Detected At</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for book in recently_detected %}
+                                <tr>
+                                    <td>{{ book.title }}</td>
+                                    <td>{{ book.author }}</td>
+                                    <td>{{ book.isbn }}</td>
+                                    <td>{{ book.tag_id }}</td>
+                                    <td>{{ book.last_detected|date:"M d, Y H:i" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No books have been detected yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Activities -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">Recent Borrowing Activities</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_activities %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Book</th>
+                                    <th>Student</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for activity in recent_activities %}
+                                <tr>
+                                    <td>{{ activity.book.title }}</td>
+                                    <td>{{ activity.student.name }}</td>
+                                    <td>{{ activity.borrowed_date|date:"M d, Y" }}</td>
+                                    <td>
+                                        {% if activity.is_returned %}
+                                        <span class="badge bg-success">Returned</span>
+                                        {% else %}
+                                        <span class="badge bg-warning text-dark">Borrowed</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No recent activities.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Popular Books Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">Most Popular Books</h5>
+                </div>
+                <div class="card-body">
+                    {% if most_borrowed %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Author</th>
+                                    <th>Genre</th>
+                                    <th>Times Borrowed</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for book in most_borrowed %}
+                                <tr>
+                                    <td>{{ book.title }}</td>
+                                    <td>{{ book.author }}</td>
+                                    <td>{{ book.genre }}</td>
+                                    <td>{{ book.borrow_count }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No books have been borrowed yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
