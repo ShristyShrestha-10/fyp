@@ -19,7 +19,7 @@ from django.db.models import Q
 from .models import Book, Student, BorrowedBook
 from django.db.models import Count
 from django.utils import timezone
-from .cameras import IDCardScanner, BorrowBookScanner, ReturnBookScanner
+from .cameras import IDCardScanner, BorrowCamera, ReturnCamera
 from .id_card_processor import IDCardProcessor
 
 # Set up logging
@@ -189,9 +189,9 @@ def camera_feed(request):
         if scanner_type == 'id_card':
             camera = IDCardScanner()
         elif scanner_type == 'borrow':
-            camera = BorrowBookScanner()
+            camera = BorrowCamera()
         elif scanner_type == 'return':
-            camera = ReturnBookScanner()
+            camera = ReturnCamera()
         else:
             return JsonResponse({'error': 'Invalid scanner type'}, status=400)
             
@@ -345,19 +345,19 @@ class IDCardScanner(BaseCamera):
                 # Get the first face found
                 top, right, bottom, left = face_locations[0]
                 
-                # Only save face if it hasn't been saved yet and we're in capture phase
-                if not self.face_saved and self.processor.should_capture():
-                    # Extract face image from ROI
-                    face_image = face_roi[top:bottom, left:right]
-                    
-                    # Create output directory if it doesn't exist
-                    output_dir = os.path.join('media', 'faces')
-                    os.makedirs(output_dir, exist_ok=True)
-                    
-                    # Generate timestamp for filename
-                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                    face_path = os.path.join(output_dir, f'face_{timestamp}.jpg')
-                    
+                # Extract face image from ROI
+                face_image = face_roi[top:bottom, left:right]
+                
+                # Create output directory if it doesn't exist
+                output_dir = os.path.join('media', 'faces')
+                os.makedirs(output_dir, exist_ok=True)
+                
+                # Generate timestamp for filename
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                face_path = os.path.join(output_dir, f'face_{timestamp}.jpg')
+                
+                # Only save if in capture phase or if face hasn't been saved yet
+                if (self.processor.should_capture() or not self.face_saved) and not self.face_detected:
                     # Save face image
                     cv2.imwrite(face_path, face_image)
                     
@@ -381,13 +381,14 @@ class IDCardScanner(BaseCamera):
         
     def get_frame(self):
         """Get a frame from the camera with ID card scanning overlay"""
-        success, frame = self.video.read()
-        if not success:
-            logger.error("Failed to read frame from camera")
-            return None
-            
         try:
-          
+            if not self.is_running or self.video is None:
+                return None
+
+            success, frame = self.video.read()
+            if not success:
+                logger.error("Failed to read frame from camera")
+                return None
             
             if not self.capture_complete:
                 # Start capture timer if not already started
@@ -433,18 +434,32 @@ class IDCardScanner(BaseCamera):
                             self.processor.start_time = None
                 
                 # Try to detect face continuously in face detection mode
-                elif self.id_card_captured:
-                    # Only detect face without saving
+                elif self.id_card_captured and not self.face_saved:
+                    # Always try to detect and save face after ID card is captured
                     self.detect_and_save_face(frame)
+            
+            # Draw the face detection box in face detection mode
+            if self.id_card_captured and not self.capture_complete and self.box_coords:
+                x, y, box_width, box_height = self.box_coords
+                cv2.rectangle(frame, (x, y), (x + box_width, y + box_height), (0, 255, 0), 2)
+                cv2.putText(frame, "Place your face here", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
             
             # Display error message on frame if any
             if self.error_message:
                 cv2.putText(frame, self.error_message, (10, 60),
                           cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
             
+            # Add appropriate instruction based on capture phase
+            if not self.id_card_captured:
+                cv2.putText(frame, "Capturing ID card...", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+            elif not self.face_saved:
+                cv2.putText(frame, "Now capturing face...", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+            elif self.capture_complete:
+                cv2.putText(frame, "Capture complete!", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+            
             # Encode the frame
             ret, jpeg = cv2.imencode('.jpg', frame)
-            return jpeg.tobytes()
+            return jpeg.tobytes() if ret else None
             
         except Exception as e:
             logger.error(f"Error processing frame: {str(e)}")
@@ -528,9 +543,9 @@ def video_feed(request, camera_type='id_card'):
         if camera_type == 'id_card':
             camera = IDCardScanner()
         elif camera_type == 'borrow':
-            camera = BorrowBookScanner()
+            camera = BorrowCamera()
         elif camera_type == 'return':
-            camera = ReturnBookScanner()
+            camera = ReturnCamera()
         else:
             return JsonResponse({'error': 'Invalid camera type'}, status=400)
             
@@ -559,9 +574,9 @@ def capture_frame(request, camera_type='id_card'):
         if camera_type == 'id_card':
             camera = IDCardScanner()
         elif camera_type == 'borrow':
-            camera = BorrowBookScanner()
+            camera = BorrowCamera()
         elif camera_type == 'return':
-            camera = ReturnBookScanner()
+            camera = ReturnCamera()
         else:
             return JsonResponse({'error': 'Invalid camera type'}, status=400)
             
@@ -572,15 +587,15 @@ def capture_frame(request, camera_type='id_card'):
             }, status=500)
             
         # Get a single frame
-        frame = camera.get_frame()
-        if frame is None:
+        success, frame = camera.video.read()
+        if not success or frame is None:
             return JsonResponse({
                 'error': 'Failed to capture frame'
             }, status=500)
             
-        # For ID card scanner, process the captured frame
+        # Process the frame based on camera type
         if camera_type == 'id_card':
-            # Save the captured frame
+            # For ID card scanner, use OCR processing
             image_path, cropped_path = camera.processor.save_images(frame)
             if cropped_path:
                 # Perform OCR on the cropped image
@@ -592,6 +607,46 @@ def capture_frame(request, camera_type='id_card'):
                         'text_file': text_file,
                         'image_path': image_path
                     })
+        else:
+            # For borrow and return cameras, use AprilTag detection
+            detections = camera.book_detector.detect_books(frame)
+            
+            if detections:
+                # Process detected tags
+                detected_books = []
+                for detection in detections:
+                    tag_id = detection['tag_id']
+                    
+                    # Check if tag is in our mapping
+                    if tag_id in tag_to_book_mapping:
+                        book_info = tag_to_book_mapping[tag_id]
+                        # Store the book in the database
+                        book = store_detected_book(tag_id, book_info)
+                        if book:
+                            detected_books.append({
+                                'tag_id': tag_id,
+                                'title': book_info['title'],
+                                'author': book_info.get('author', ''),
+                                'isbn': book_info.get('isbn', '')
+                            })
+                
+                # Save the frame with detections drawn on it
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                output_dir = os.path.join(settings.MEDIA_ROOT, 'book_detections')
+                os.makedirs(output_dir, exist_ok=True)
+                image_path = os.path.join(output_dir, f'book_detection_{timestamp}.jpg')
+                cv2.imwrite(image_path, frame)
+                
+                return JsonResponse({
+                    'status': 'success',
+                    'detected_books': detected_books,
+                    'image_path': image_path
+                })
+            else:
+                return JsonResponse({
+                    'status': 'warning',
+                    'message': 'No AprilTags detected in the frame'
+                })
                     
         return JsonResponse({
             'status': 'success',

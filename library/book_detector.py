@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from apriltag import apriltag
+import apriltag
 import logging
 from datetime import datetime
 
@@ -11,7 +11,7 @@ class BookDetector:
         """Initialize the AprilTag detector with the tag family used for books."""
         try:
             # Initialize AprilTag detector with tag41h12 family (good balance of size and reliability)
-            self.detector = apriltag("tag41h12")
+            self.detector = apriltag.Detector()
             logger.info("AprilTag detector initialized successfully")
         except Exception as e:
             logger.error(f"Failed to initialize AprilTag detector: {str(e)}")

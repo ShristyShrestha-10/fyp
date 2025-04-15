@@ -1,6 +1,0 @@
-User:
-
-
-
-Please extract and list all the text information from this ID card. Include names, numbers, dates, and any other relevant information.
-Assistant: 0012227259 187.17137

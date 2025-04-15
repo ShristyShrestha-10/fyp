@@ -233040,3 +233040,281 @@ INFO 2025-04-15 15:14:09,655 id_card_processor 17623 130110833297088 Switched to
 INFO 2025-04-15 15:14:09,658 id_card_processor 17623 130110833297088 Capture timer started
 INFO 2025-04-15 15:14:24,680 id_card_processor 17623 130110833297088 Capture triggered
 INFO 2025-04-15 15:14:24,680 views 17623 130110833297088 Face detected and saved to: media/faces/face_20250415_151424.jpg
+INFO 2025-04-15 16:32:48,870 views 32145 133521333982656 Loaded book mapping for tag 0: {'title': 'The Alchemist', 'author': 'Paolo Coehlo', 'genre': 'Fiction', 'isbn': '123545432543523'}
+INFO 2025-04-15 16:32:48,872 views 32145 133521333982656 Loaded book mapping for tag 1: {'title': 'The Idiot', 'author': 'John Smith', 'genre': 'Technology', 'isbn': '9780123456789'}
+INFO 2025-04-15 16:33:01,312 views 32256 126751448880576 Loaded book mapping for tag 0: {'title': 'The Alchemist', 'author': 'Paolo Coehlo', 'genre': 'Fiction', 'isbn': '123545432543523'}
+INFO 2025-04-15 16:33:01,312 views 32256 126751448880576 Loaded book mapping for tag 1: {'title': 'The Idiot', 'author': 'John Smith', 'genre': 'Technology', 'isbn': '9780123456789'}
+INFO 2025-04-15 16:33:06,719 views 32256 126745984370368 Attempting to open camera at index 2
+WARNING 2025-04-15 16:33:06,831 views 32256 126745984370368 Could not open camera 2
+INFO 2025-04-15 16:33:06,831 views 32256 126745984370368 Attempting to open camera at index 0
+INFO 2025-04-15 16:33:08,444 views 32256 126745984370368 Successfully opened camera at index 0
+INFO 2025-04-15 16:33:08,684 views 32256 126745984370368 Camera stopped and resources released
+INFO 2025-04-15 16:33:11,568 views 32256 126745984370368 Attempting to open camera at index 2
+WARNING 2025-04-15 16:33:11,679 views 32256 126745984370368 Could not open camera 2
+INFO 2025-04-15 16:33:11,680 views 32256 126745984370368 Attempting to open camera at index 0
+INFO 2025-04-15 16:33:13,286 views 32256 126745984370368 Successfully opened camera at index 0
+INFO 2025-04-15 16:33:18,675 id_card_processor 32256 126745984370368 Capture timer started
+INFO 2025-04-15 16:33:33,806 id_card_processor 32256 126745984370368 Capture triggered
+INFO 2025-04-15 16:33:33,806 views 32256 126745984370368 Attempting to capture and process ID card
+INFO 2025-04-15 16:33:33,808 id_card_processor 32256 126745984370368 Box coordinates set to: (96, 72, 448, 336)
+INFO 2025-04-15 16:33:33,809 id_card_processor 32256 126745984370368 Images saved: media/id_cards/id_card_20250415_163333.jpg and media/id_cards/id_card_cropped_20250415_163333.jpg
+INFO 2025-04-15 16:33:35,706 id_card_processor 32256 126745984370368 OCR completed successfully. Text saved to: media/id_cards/id_card_cropped_20250415_163333.txt
+INFO 2025-04-15 16:33:35,706 views 32256 126745984370368 OCR completed successfully
+INFO 2025-04-15 16:33:35,706 id_card_processor 32256 126745984370368 Switched to face detection mode
+INFO 2025-04-15 16:33:35,709 id_card_processor 32256 126745984370368 Capture timer started
+INFO 2025-04-15 16:36:30,610 views 33788 135913808070336 Loaded book mapping for tag 0: {'title': 'The Alchemist', 'author': 'Paolo Coehlo', 'genre': 'Fiction', 'isbn': '123545432543523'}
+INFO 2025-04-15 16:36:30,610 views 33788 135913808070336 Loaded book mapping for tag 1: {'title': 'The Idiot', 'author': 'John Smith', 'genre': 'Technology', 'isbn': '9780123456789'}
+INFO 2025-04-15 16:37:15,110 views 33788 135908162537152 Attempting to open camera at index 2
+WARNING 2025-04-15 16:37:15,221 views 33788 135908162537152 Could not open camera 2
+INFO 2025-04-15 16:37:15,222 views 33788 135908162537152 Attempting to open camera at index 0
+INFO 2025-04-15 16:37:16,832 views 33788 135908162537152 Successfully opened camera at index 0
+INFO 2025-04-15 16:37:21,876 id_card_processor 33788 135908162537152 Capture timer started
+INFO 2025-04-15 16:37:36,949 id_card_processor 33788 135908162537152 Capture triggered
+INFO 2025-04-15 16:37:36,949 views 33788 135908162537152 Attempting to capture and process ID card
+INFO 2025-04-15 16:37:36,951 id_card_processor 33788 135908162537152 Box coordinates set to: (96, 72, 448, 336)
+INFO 2025-04-15 16:37:36,952 id_card_processor 33788 135908162537152 Images saved: media/id_cards/id_card_20250415_163736.jpg and media/id_cards/id_card_cropped_20250415_163736.jpg
+INFO 2025-04-15 16:37:38,129 id_card_processor 33788 135908162537152 OCR completed successfully. Text saved to: media/id_cards/id_card_cropped_20250415_163736.txt
+INFO 2025-04-15 16:37:38,130 views 33788 135908162537152 OCR completed successfully
+INFO 2025-04-15 16:37:38,130 id_card_processor 33788 135908162537152 Switched to face detection mode
+INFO 2025-04-15 16:37:38,132 id_card_processor 33788 135908162537152 Capture timer started
+INFO 2025-04-15 16:37:53,209 id_card_processor 33788 135908162537152 Capture triggered
+INFO 2025-04-15 16:37:53,261 views 33788 135908162537152 Face detection completed successfully
+INFO 2025-04-15 16:37:53,587 views 33788 135908162537152 Camera stopped and resources released
+INFO 2025-04-15 16:37:53,587 views 33788 135908162537152 Camera stopped and resources released
+INFO 2025-04-15 16:37:54,662 views 33788 135907271247552 Attempting to open camera at index 2
+WARNING 2025-04-15 16:37:54,662 views 33788 135907271247552 Could not open camera 2
+INFO 2025-04-15 16:37:54,662 views 33788 135907271247552 Attempting to open camera at index 0
+INFO 2025-04-15 16:37:55,323 views 33788 135907271247552 Successfully opened camera at index 0
+INFO 2025-04-15 16:37:59,489 id_card_processor 33788 135907271247552 Capture timer started
+INFO 2025-04-15 16:38:14,546 id_card_processor 33788 135907271247552 Capture triggered
+INFO 2025-04-15 16:38:14,546 views 33788 135907271247552 Attempting to capture and process ID card
+INFO 2025-04-15 16:38:14,548 id_card_processor 33788 135907271247552 Box coordinates set to: (96, 72, 448, 336)
+INFO 2025-04-15 16:38:14,549 id_card_processor 33788 135907271247552 Images saved: media/id_cards/id_card_20250415_163814.jpg and media/id_cards/id_card_cropped_20250415_163814.jpg
+INFO 2025-04-15 16:38:15,177 id_card_processor 33788 135907271247552 OCR completed successfully. Text saved to: media/id_cards/id_card_cropped_20250415_163814.txt
+INFO 2025-04-15 16:38:15,177 views 33788 135907271247552 OCR completed successfully
+INFO 2025-04-15 16:38:15,177 id_card_processor 33788 135907271247552 Switched to face detection mode
+INFO 2025-04-15 16:38:15,180 id_card_processor 33788 135907271247552 Capture timer started
+INFO 2025-04-15 16:38:30,238 id_card_processor 33788 135907271247552 Capture triggered
+ERROR 2025-04-15 16:38:30,284 views 33788 135907271247552 No face detected. Please position your face in the green box.
+INFO 2025-04-15 16:38:30,370 id_card_processor 33788 135907271247552 Capture timer started
+INFO 2025-04-15 16:38:45,430 id_card_processor 33788 135907271247552 Capture triggered
+ERROR 2025-04-15 16:38:45,478 views 33788 135907271247552 No face detected. Please position your face in the green box.
+INFO 2025-04-15 16:38:45,562 id_card_processor 33788 135907271247552 Capture timer started
+INFO 2025-04-15 16:39:00,622 id_card_processor 33788 135907271247552 Capture triggered
+ERROR 2025-04-15 16:39:00,668 views 33788 135907271247552 No face detected. Please position your face in the green box.
+INFO 2025-04-15 16:39:00,754 id_card_processor 33788 135907271247552 Capture timer started
+INFO 2025-04-15 16:39:15,814 id_card_processor 33788 135907271247552 Capture triggered
+ERROR 2025-04-15 16:39:15,864 views 33788 135907271247552 No face detected. Please position your face in the green box.
+INFO 2025-04-15 16:39:15,946 id_card_processor 33788 135907271247552 Capture timer started
+INFO 2025-04-15 16:39:31,007 id_card_processor 33788 135907271247552 Capture triggered
+ERROR 2025-04-15 16:39:31,053 views 33788 135907271247552 No face detected. Please position your face in the green box.
+INFO 2025-04-15 16:39:31,142 id_card_processor 33788 135907271247552 Capture timer started
+INFO 2025-04-15 16:39:46,198 id_card_processor 33788 135907271247552 Capture triggered
+INFO 2025-04-15 16:39:46,246 views 33788 135907271247552 Face detection completed successfully
+INFO 2025-04-15 16:42:15,901 views 33788 135907271247552 Camera stopped and resources released
+INFO 2025-04-15 16:42:15,902 views 33788 135907271247552 Camera stopped and resources released
+INFO 2025-04-15 16:42:18,046 views 33788 135907109766848 Attempting to open camera at index 2
+WARNING 2025-04-15 16:42:18,047 views 33788 135907109766848 Could not open camera 2
+INFO 2025-04-15 16:42:18,047 views 33788 135907109766848 Attempting to open camera at index 0
+INFO 2025-04-15 16:42:18,708 views 33788 135907109766848 Successfully opened camera at index 0
+INFO 2025-04-15 16:42:18,953 views 33788 135907109766848 Camera stopped and resources released
+INFO 2025-04-15 16:42:20,286 views 33788 135907109766848 Attempting to open camera at index 2
+WARNING 2025-04-15 16:42:20,287 views 33788 135907109766848 Could not open camera 2
+INFO 2025-04-15 16:42:20,287 views 33788 135907109766848 Attempting to open camera at index 0
+INFO 2025-04-15 16:42:20,946 views 33788 135907109766848 Successfully opened camera at index 0
+INFO 2025-04-15 16:42:25,529 id_card_processor 33788 135907109766848 Capture timer started
+INFO 2025-04-15 16:42:40,538 id_card_processor 33788 135907109766848 Capture triggered
+INFO 2025-04-15 16:42:40,539 views 33788 135907109766848 Attempting to capture and process ID card
+INFO 2025-04-15 16:42:40,541 id_card_processor 33788 135907109766848 Box coordinates set to: (96, 72, 448, 336)
+INFO 2025-04-15 16:42:40,542 id_card_processor 33788 135907109766848 Images saved: media/id_cards/id_card_20250415_164240.jpg and media/id_cards/id_card_cropped_20250415_164240.jpg
+INFO 2025-04-15 16:42:41,305 id_card_processor 33788 135907109766848 OCR completed successfully. Text saved to: media/id_cards/id_card_cropped_20250415_164240.txt
+INFO 2025-04-15 16:42:41,306 views 33788 135907109766848 OCR completed successfully
+INFO 2025-04-15 16:42:41,306 id_card_processor 33788 135907109766848 Switched to face detection mode
+INFO 2025-04-15 16:42:41,308 id_card_processor 33788 135907109766848 Capture timer started
+INFO 2025-04-15 16:42:56,331 id_card_processor 33788 135907109766848 Capture triggered
+INFO 2025-04-15 16:42:56,377 views 33788 135907109766848 Face detection completed successfully
+INFO 2025-04-15 16:46:18,683 views 35449 131014532355520 Loaded book mapping for tag 0: {'title': 'The Alchemist', 'author': 'Paolo Coehlo', 'genre': 'Fiction', 'isbn': '123545432543523'}
+INFO 2025-04-15 16:46:18,683 views 35449 131014532355520 Loaded book mapping for tag 1: {'title': 'The Idiot', 'author': 'John Smith', 'genre': 'Technology', 'isbn': '9780123456789'}
+INFO 2025-04-15 16:46:30,726 views 35449 131009064470208 Attempting to open camera at index 2
+WARNING 2025-04-15 16:46:30,836 views 35449 131009064470208 Could not open camera 2
+INFO 2025-04-15 16:46:30,837 views 35449 131009064470208 Attempting to open camera at index 0
+INFO 2025-04-15 16:46:32,447 views 35449 131009064470208 Successfully opened camera at index 0
+INFO 2025-04-15 16:46:36,603 id_card_processor 35449 131009064470208 Capture timer started
+INFO 2025-04-15 16:46:51,632 id_card_processor 35449 131009064470208 Capture triggered
+INFO 2025-04-15 16:46:51,632 views 35449 131009064470208 Attempting to capture and process ID card
+INFO 2025-04-15 16:46:51,634 id_card_processor 35449 131009064470208 Box coordinates set to: (96, 72, 448, 336)
+INFO 2025-04-15 16:46:51,634 id_card_processor 35449 131009064470208 Images saved: media/id_cards/id_card_20250415_164651.jpg and media/id_cards/id_card_cropped_20250415_164651.jpg
+INFO 2025-04-15 16:46:53,374 id_card_processor 35449 131009064470208 OCR completed successfully. Text saved to: media/id_cards/id_card_cropped_20250415_164651.txt
+INFO 2025-04-15 16:46:53,374 views 35449 131009064470208 OCR completed successfully
+INFO 2025-04-15 16:46:53,374 id_card_processor 35449 131009064470208 Switched to face detection mode
+INFO 2025-04-15 16:46:53,376 id_card_processor 35449 131009064470208 Capture timer started
+INFO 2025-04-15 16:47:08,423 id_card_processor 35449 131009064470208 Capture triggered
+ERROR 2025-04-15 16:47:08,470 views 35449 131009064470208 No face detected. Please position your face in the green box.
+INFO 2025-04-15 16:47:08,555 id_card_processor 35449 131009064470208 Capture timer started
+INFO 2025-04-15 16:47:23,615 id_card_processor 35449 131009064470208 Capture triggered
+ERROR 2025-04-15 16:47:23,661 views 35449 131009064470208 No face detected. Please position your face in the green box.
+INFO 2025-04-15 16:47:23,751 id_card_processor 35449 131009064470208 Capture timer started
+INFO 2025-04-15 16:47:38,807 id_card_processor 35449 131009064470208 Capture triggered
+INFO 2025-04-15 16:47:38,853 views 35449 131009064470208 Face detection completed successfully
+INFO 2025-04-15 16:47:41,185 views 35449 131009064470208 Camera stopped and resources released
+INFO 2025-04-15 16:47:41,185 views 35449 131009064470208 Camera stopped and resources released
+INFO 2025-04-15 16:47:55,826 views 35449 131008087197376 Attempting to open camera at index 2
+WARNING 2025-04-15 16:47:55,938 views 35449 131008087197376 Could not open camera 2
+INFO 2025-04-15 16:47:55,939 views 35449 131008087197376 Attempting to open camera at index 0
+INFO 2025-04-15 16:47:57,546 views 35449 131008087197376 Successfully opened camera at index 0
+INFO 2025-04-15 16:47:57,787 views 35449 131008087197376 Camera stopped and resources released
+INFO 2025-04-15 16:47:59,083 views 35449 131008087197376 Attempting to open camera at index 2
+WARNING 2025-04-15 16:47:59,084 views 35449 131008087197376 Could not open camera 2
+INFO 2025-04-15 16:47:59,084 views 35449 131008087197376 Attempting to open camera at index 0
+INFO 2025-04-15 16:47:59,741 views 35449 131008087197376 Successfully opened camera at index 0
+INFO 2025-04-15 16:48:04,670 id_card_processor 35449 131008087197376 Capture timer started
+INFO 2025-04-15 16:48:12,141 views 35449 131009064470208 Attempting to open camera at index 2
+WARNING 2025-04-15 16:48:12,142 views 35449 131009064470208 Could not open camera 2
+INFO 2025-04-15 16:48:12,142 views 35449 131009064470208 Attempting to open camera at index 0
+WARNING 2025-04-15 16:48:12,143 views 35449 131009064470208 Could not open camera 0
+INFO 2025-04-15 16:48:12,143 views 35449 131009064470208 Attempting to open camera at index 1
+WARNING 2025-04-15 16:48:12,143 views 35449 131009064470208 Could not open camera 1
+ERROR 2025-04-15 16:48:12,143 views 35449 131009064470208 Error initializing camera: Could not open any camera
+ERROR 2025-04-15 16:48:12,143 views 35449 131009064470208 Error in camera_feed view: Could not open any camera
+INFO 2025-04-15 16:48:12,144 views 35449 131009064470208 Camera stopped and resources released
+INFO 2025-04-15 16:48:12,648 views 35449 131008087197376 Camera stopped and resources released
+INFO 2025-04-15 16:48:12,648 views 35449 131008087197376 Camera stopped and resources released
+INFO 2025-04-15 16:48:20,555 views 35449 131009064470208 Attempting to open camera at index 2
+WARNING 2025-04-15 16:48:20,667 views 35449 131009064470208 Could not open camera 2
+INFO 2025-04-15 16:48:20,667 views 35449 131009064470208 Attempting to open camera at index 0
+INFO 2025-04-15 16:48:22,275 views 35449 131009064470208 Successfully opened camera at index 0
+INFO 2025-04-15 16:48:26,905 id_card_processor 35449 131009064470208 Capture timer started
+INFO 2025-04-15 16:48:41,993 id_card_processor 35449 131009064470208 Capture triggered
+INFO 2025-04-15 16:48:41,994 views 35449 131009064470208 Attempting to capture and process ID card
+INFO 2025-04-15 16:48:41,995 id_card_processor 35449 131009064470208 Box coordinates set to: (96, 72, 448, 336)
+INFO 2025-04-15 16:48:41,996 id_card_processor 35449 131009064470208 Images saved: media/id_cards/id_card_20250415_164841.jpg and media/id_cards/id_card_cropped_20250415_164841.jpg
+INFO 2025-04-15 16:48:42,583 id_card_processor 35449 131009064470208 OCR completed successfully. Text saved to: media/id_cards/id_card_cropped_20250415_164841.txt
+INFO 2025-04-15 16:48:42,583 views 35449 131009064470208 OCR completed successfully
+INFO 2025-04-15 16:48:42,583 id_card_processor 35449 131009064470208 Switched to face detection mode
+INFO 2025-04-15 16:48:42,586 id_card_processor 35449 131009064470208 Capture timer started
+INFO 2025-04-15 16:48:57,589 id_card_processor 35449 131009064470208 Capture triggered
+INFO 2025-04-15 16:48:57,636 views 35449 131009064470208 Face detection completed successfully
+INFO 2025-04-15 16:49:52,737 views 35449 131009064470208 Camera stopped and resources released
+INFO 2025-04-15 16:49:52,737 views 35449 131009064470208 Camera stopped and resources released
+INFO 2025-04-15 16:54:12,301 views 35449 131009064470208 Attempting to open camera at index 2
+WARNING 2025-04-15 16:54:12,413 views 35449 131009064470208 Could not open camera 2
+INFO 2025-04-15 16:54:12,413 views 35449 131009064470208 Attempting to open camera at index 0
+INFO 2025-04-15 16:54:14,018 views 35449 131009064470208 Successfully opened camera at index 0
+INFO 2025-04-15 16:54:17,983 id_card_processor 35449 131009064470208 Capture timer started
+INFO 2025-04-15 16:54:33,074 id_card_processor 35449 131009064470208 Capture triggered
+INFO 2025-04-15 16:54:33,075 views 35449 131009064470208 Attempting to capture and process ID card
+INFO 2025-04-15 16:54:33,076 id_card_processor 35449 131009064470208 Box coordinates set to: (96, 72, 448, 336)
+INFO 2025-04-15 16:54:33,077 id_card_processor 35449 131009064470208 Images saved: media/id_cards/id_card_20250415_165433.jpg and media/id_cards/id_card_cropped_20250415_165433.jpg
+INFO 2025-04-15 16:54:33,654 id_card_processor 35449 131009064470208 OCR completed successfully. Text saved to: media/id_cards/id_card_cropped_20250415_165433.txt
+INFO 2025-04-15 16:54:33,654 views 35449 131009064470208 OCR completed successfully
+INFO 2025-04-15 16:54:33,654 id_card_processor 35449 131009064470208 Switched to face detection mode
+INFO 2025-04-15 16:54:33,657 id_card_processor 35449 131009064470208 Capture timer started
+INFO 2025-04-15 16:54:48,666 id_card_processor 35449 131009064470208 Capture triggered
+INFO 2025-04-15 16:54:48,714 views 35449 131009064470208 Face detection completed successfully
+INFO 2025-04-15 16:56:13,931 views 35449 131009064470208 Camera stopped and resources released
+INFO 2025-04-15 16:56:13,931 views 35449 131009064470208 Camera stopped and resources released
+INFO 2025-04-15 16:56:15,355 views 35449 131008076711616 Attempting to open camera at index 2
+WARNING 2025-04-15 16:56:15,356 views 35449 131008076711616 Could not open camera 2
+INFO 2025-04-15 16:56:15,356 views 35449 131008076711616 Attempting to open camera at index 0
+INFO 2025-04-15 16:56:16,018 views 35449 131008076711616 Successfully opened camera at index 0
+INFO 2025-04-15 16:56:21,546 id_card_processor 35449 131008076711616 Capture timer started
+INFO 2025-04-15 16:56:36,604 id_card_processor 35449 131008076711616 Capture triggered
+INFO 2025-04-15 16:56:36,605 views 35449 131008076711616 Attempting to capture and process ID card
+INFO 2025-04-15 16:56:36,606 id_card_processor 35449 131008076711616 Box coordinates set to: (96, 72, 448, 336)
+INFO 2025-04-15 16:56:36,607 id_card_processor 35449 131008076711616 Images saved: media/id_cards/id_card_20250415_165636.jpg and media/id_cards/id_card_cropped_20250415_165636.jpg
+INFO 2025-04-15 16:56:37,296 id_card_processor 35449 131008076711616 OCR completed successfully. Text saved to: media/id_cards/id_card_cropped_20250415_165636.txt
+INFO 2025-04-15 16:56:37,296 views 35449 131008076711616 OCR completed successfully
+INFO 2025-04-15 16:56:37,296 id_card_processor 35449 131008076711616 Switched to face detection mode
+INFO 2025-04-15 16:56:37,298 id_card_processor 35449 131008076711616 Capture timer started
+INFO 2025-04-15 16:56:52,332 id_card_processor 35449 131008076711616 Capture triggered
+INFO 2025-04-15 16:56:52,379 views 35449 131008076711616 Face detection completed successfully
+INFO 2025-04-15 16:57:28,157 views 35449 131008076711616 Camera stopped and resources released
+INFO 2025-04-15 16:57:28,158 views 35449 131008076711616 Camera stopped and resources released
+INFO 2025-04-15 16:59:26,608 views 35449 131008066225856 Attempting to open camera at index 2
+WARNING 2025-04-15 16:59:26,720 views 35449 131008066225856 Could not open camera 2
+INFO 2025-04-15 16:59:26,720 views 35449 131008066225856 Attempting to open camera at index 0
+INFO 2025-04-15 16:59:28,331 views 35449 131008066225856 Successfully opened camera at index 0
+INFO 2025-04-15 16:59:33,419 id_card_processor 35449 131008066225856 Capture timer started
+INFO 2025-04-15 16:59:37,901 views 35449 131008066225856 Camera stopped and resources released
+INFO 2025-04-15 16:59:37,901 views 35449 131008066225856 Camera stopped and resources released
+INFO 2025-04-15 17:13:59,259 views 39286 135422087280064 Loaded book mapping for tag 0: {'title': 'The Alchemist', 'author': 'Paolo Coehlo', 'genre': 'Fiction', 'isbn': '123545432543523'}
+INFO 2025-04-15 17:13:59,259 views 39286 135422087280064 Loaded book mapping for tag 1: {'title': 'The Idiot', 'author': 'John Smith', 'genre': 'Technology', 'isbn': '9780123456789'}
+INFO 2025-04-15 17:14:24,203 views 39396 135232511268288 Loaded book mapping for tag 0: {'title': 'The Alchemist', 'author': 'Paolo Coehlo', 'genre': 'Fiction', 'isbn': '123545432543523'}
+INFO 2025-04-15 17:14:24,203 views 39396 135232511268288 Loaded book mapping for tag 1: {'title': 'The Idiot', 'author': 'John Smith', 'genre': 'Technology', 'isbn': '9780123456789'}
+INFO 2025-04-15 17:14:57,409 views 39625 135334179329472 Loaded book mapping for tag 0: {'title': 'The Alchemist', 'author': 'Paolo Coehlo', 'genre': 'Fiction', 'isbn': '123545432543523'}
+INFO 2025-04-15 17:14:57,409 views 39625 135334179329472 Loaded book mapping for tag 1: {'title': 'The Idiot', 'author': 'John Smith', 'genre': 'Technology', 'isbn': '9780123456789'}
+INFO 2025-04-15 17:20:07,906 views 40451 140399607694784 Loaded book mapping for tag 0: {'title': 'The Alchemist', 'author': 'Paolo Coehlo', 'genre': 'Fiction', 'isbn': '123545432543523'}
+INFO 2025-04-15 17:20:07,907 views 40451 140399607694784 Loaded book mapping for tag 1: {'title': 'The Idiot', 'author': 'John Smith', 'genre': 'Technology', 'isbn': '9780123456789'}
+INFO 2025-04-15 17:20:29,557 views 40549 131248204711360 Loaded book mapping for tag 0: {'title': 'The Alchemist', 'author': 'Paolo Coehlo', 'genre': 'Fiction', 'isbn': '123545432543523'}
+INFO 2025-04-15 17:20:29,557 views 40549 131248204711360 Loaded book mapping for tag 1: {'title': 'The Idiot', 'author': 'John Smith', 'genre': 'Technology', 'isbn': '9780123456789'}
+INFO 2025-04-15 17:20:43,981 views 40644 129073644832448 Loaded book mapping for tag 0: {'title': 'The Alchemist', 'author': 'Paolo Coehlo', 'genre': 'Fiction', 'isbn': '123545432543523'}
+INFO 2025-04-15 17:20:43,981 views 40644 129073644832448 Loaded book mapping for tag 1: {'title': 'The Idiot', 'author': 'John Smith', 'genre': 'Technology', 'isbn': '9780123456789'}
+INFO 2025-04-15 17:20:46,488 views 40644 129068005590720 Attempting to open camera at index 2
+WARNING 2025-04-15 17:20:46,599 views 40644 129068005590720 Could not open camera 2
+INFO 2025-04-15 17:20:46,599 views 40644 129068005590720 Attempting to open camera at index 0
+INFO 2025-04-15 17:20:48,208 views 40644 129068005590720 Successfully opened camera at index 0
+INFO 2025-04-15 17:21:07,278 id_card_processor 40644 129068005590720 Capture timer started
+INFO 2025-04-15 17:21:22,312 id_card_processor 40644 129068005590720 Capture triggered
+INFO 2025-04-15 17:21:22,312 views 40644 129068005590720 Attempting to capture and process ID card
+INFO 2025-04-15 17:21:22,314 id_card_processor 40644 129068005590720 Box coordinates set to: (96, 72, 448, 336)
+INFO 2025-04-15 17:21:22,314 id_card_processor 40644 129068005590720 Images saved: media/id_cards/id_card_20250415_172122.jpg and media/id_cards/id_card_cropped_20250415_172122.jpg
+INFO 2025-04-15 17:21:23,393 id_card_processor 40644 129068005590720 OCR completed successfully. Text saved to: media/id_cards/id_card_cropped_20250415_172122.txt
+INFO 2025-04-15 17:21:23,393 views 40644 129068005590720 OCR completed successfully
+INFO 2025-04-15 17:21:23,394 id_card_processor 40644 129068005590720 Switched to face detection mode
+INFO 2025-04-15 17:21:23,396 id_card_processor 40644 129068005590720 Capture timer started
+INFO 2025-04-15 17:21:23,546 views 40644 129068005590720 Face detected and saved to: media/faces/face_20250415_172123.jpg
+INFO 2025-04-15 17:21:38,399 id_card_processor 40644 129068005590720 Capture triggered
+ERROR 2025-04-15 17:21:38,449 views 40644 129068005590720 No face detected. Please position your face in the green box.
+INFO 2025-04-15 17:21:38,500 id_card_processor 40644 129068005590720 Capture timer started
+INFO 2025-04-15 17:21:53,591 id_card_processor 40644 129068005590720 Capture triggered
+INFO 2025-04-15 17:21:53,637 views 40644 129068005590720 Face detection completed successfully
+INFO 2025-04-15 17:21:55,765 views 40644 129068005590720 Camera stopped and resources released
+INFO 2025-04-15 17:21:55,765 views 40644 129068005590720 Camera stopped and resources released
+INFO 2025-04-15 17:21:57,141 views 40644 129067030415040 Attempting to open camera at index 2
+WARNING 2025-04-15 17:21:57,141 views 40644 129067030415040 Could not open camera 2
+INFO 2025-04-15 17:21:57,142 views 40644 129067030415040 Attempting to open camera at index 0
+INFO 2025-04-15 17:21:57,668 views 40644 129067030415040 Successfully opened camera at index 0
+INFO 2025-04-15 17:22:09,194 id_card_processor 40644 129067030415040 Capture timer started
+INFO 2025-04-15 17:22:24,287 id_card_processor 40644 129067030415040 Capture triggered
+INFO 2025-04-15 17:22:24,287 views 40644 129067030415040 Attempting to capture and process ID card
+INFO 2025-04-15 17:22:24,289 id_card_processor 40644 129067030415040 Box coordinates set to: (96, 72, 448, 336)
+INFO 2025-04-15 17:22:24,290 id_card_processor 40644 129067030415040 Images saved: media/id_cards/id_card_20250415_172224.jpg and media/id_cards/id_card_cropped_20250415_172224.jpg
+INFO 2025-04-15 17:22:25,411 id_card_processor 40644 129067030415040 OCR completed successfully. Text saved to: media/id_cards/id_card_cropped_20250415_172224.txt
+INFO 2025-04-15 17:22:25,412 views 40644 129067030415040 OCR completed successfully
+INFO 2025-04-15 17:22:25,412 id_card_processor 40644 129067030415040 Switched to face detection mode
+INFO 2025-04-15 17:22:25,414 id_card_processor 40644 129067030415040 Capture timer started
+INFO 2025-04-15 17:22:26,031 views 40644 129067030415040 Face detected and saved to: media/faces/face_20250415_172226.jpg
+INFO 2025-04-15 17:22:40,506 id_card_processor 40644 129067030415040 Capture triggered
+INFO 2025-04-15 17:22:40,554 views 40644 129067030415040 Face detection completed successfully
+INFO 2025-04-15 17:24:17,513 views 40644 129067030415040 Camera stopped and resources released
+INFO 2025-04-15 17:24:17,513 views 40644 129067030415040 Camera stopped and resources released
+INFO 2025-04-15 17:24:18,802 views 40644 129067019929280 Attempting to open camera at index 2
+WARNING 2025-04-15 17:24:18,802 views 40644 129067019929280 Could not open camera 2
+INFO 2025-04-15 17:24:18,802 views 40644 129067019929280 Attempting to open camera at index 0
+INFO 2025-04-15 17:24:19,332 views 40644 129067019929280 Successfully opened camera at index 0
+INFO 2025-04-15 17:24:19,541 views 40644 129067019929280 Camera stopped and resources released
+INFO 2025-04-15 17:24:25,319 views 40644 129067019929280 Attempting to open camera at index 2
+WARNING 2025-04-15 17:24:25,430 views 40644 129067019929280 Could not open camera 2
+INFO 2025-04-15 17:24:25,430 views 40644 129067019929280 Attempting to open camera at index 0
+INFO 2025-04-15 17:24:27,037 views 40644 129067019929280 Successfully opened camera at index 0
+INFO 2025-04-15 17:24:30,722 id_card_processor 40644 129067019929280 Capture timer started
+INFO 2025-04-15 17:24:36,273 views 40644 129067019929280 Camera stopped and resources released
+INFO 2025-04-15 17:24:36,274 views 40644 129067019929280 Camera stopped and resources released
+INFO 2025-04-15 17:28:59,294 views 41825 128631611328192 Loaded book mapping for tag 0: {'title': 'The Alchemist', 'author': 'Paolo Coehlo', 'genre': 'Fiction', 'isbn': '123545432543523'}
+INFO 2025-04-15 17:28:59,295 views 41825 128631611328192 Loaded book mapping for tag 1: {'title': 'The Idiot', 'author': 'John Smith', 'genre': 'Technology', 'isbn': '9780123456789'}
+INFO 2025-04-15 17:29:03,985 views 41825 128625978377920 Attempting to open camera at index 2
+WARNING 2025-04-15 17:29:04,100 views 41825 128625978377920 Could not open camera 2
+INFO 2025-04-15 17:29:04,100 views 41825 128625978377920 Attempting to open camera at index 0
+INFO 2025-04-15 17:29:05,540 views 41825 128625978377920 Successfully opened camera at index 0
+INFO 2025-04-15 17:29:10,287 id_card_processor 41825 128625978377920 Capture timer started
+INFO 2025-04-15 17:29:25,357 id_card_processor 41825 128625978377920 Capture triggered
+INFO 2025-04-15 17:29:25,357 views 41825 128625978377920 Attempting to capture and process ID card
+INFO 2025-04-15 17:29:25,359 id_card_processor 41825 128625978377920 Box coordinates set to: (96, 72, 448, 336)
+INFO 2025-04-15 17:29:25,360 id_card_processor 41825 128625978377920 Images saved: media/id_cards/id_card_20250415_172925.jpg and media/id_cards/id_card_cropped_20250415_172925.jpg
+INFO 2025-04-15 17:29:26,991 id_card_processor 41825 128625978377920 OCR completed successfully. Text saved to: media/id_cards/id_card_cropped_20250415_172925.txt
+INFO 2025-04-15 17:29:26,992 views 41825 128625978377920 OCR completed successfully
+INFO 2025-04-15 17:29:26,992 id_card_processor 41825 128625978377920 Switched to face detection mode
+INFO 2025-04-15 17:29:26,994 id_card_processor 41825 128625978377920 Capture timer started
+INFO 2025-04-15 17:29:27,404 views 41825 128625978377920 Face detected and saved to: media/faces/face_20250415_172927.jpg
+INFO 2025-04-15 17:29:42,113 id_card_processor 41825 128625978377920 Capture triggered
+INFO 2025-04-15 17:29:42,159 views 41825 128625978377920 Face detection completed successfully

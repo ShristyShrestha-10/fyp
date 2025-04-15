@@ -1,6 +1,0 @@
-User:
-
-
-
-Please extract and list all the text information from this ID card. Include names, numbers, dates, and any other relevant information.
-Assistant: [1] "john" [2] "1990" [3] "john" [4] "1990" [5] "john" [6] "1990" [7] "john" [8] "1990" [9] "john" [10] "1990" [11] "john" [12] "1990" [13] "john" [14] "1990" [15] "john" [16] "1990" [17] "john" [18] "1990" [19] "john" [20] "1990" [21] "john" [22] "1990" [23] "john" [24] "1990" [25] "john" [26] "1990" [27] "john" [28] "1990" [29] "john" [30] "1990" [31] "john" [32] "1990" [33] "john" [34] "1990" [35] "john" [36] "1990" [37] "john" [38] "1990" [39] "john" [40] "1990" [41] "john" [42] "1990" [43] "john" [44] "1990" [45] "john" [46] "1990" [47] "john" [48] "1990" [49] "john" [50] "1990" [51] "john" [52] "1990" [53] "john" [54] "1990" [55] "john" [56] "1990" [57] "

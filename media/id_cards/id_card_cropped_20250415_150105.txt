@@ -1,6 +1,0 @@
-User:
-
-
-
-Extract name, college id starting from NP01, course name starting with BSc(Hons) and if possible validity date of ID card. 
-Assistant: Abhishek Shah. Islington College Kathmandu.
