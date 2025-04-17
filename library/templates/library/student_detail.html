@@ -1,0 +1,120 @@
+{% extends 'library/base.html' %}
+{% load static %}
+
+{% block title %}Student Details - {{ student.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12 mb-3">
+            <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Student Information Card -->
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Student Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        {% if student.id_card_image %}
+                            <img src="{{ MEDIA_URL }}{{ student.id_card_image.url }}" alt="{{ student.name }}" 
+                                 class="img-fluid rounded-circle" style="width: 150px; height: 150px; object-fit: cover;">
+                        {% else %}
+                            <div class="bg-light rounded-circle d-flex align-items-center justify-content-center mx-auto" 
+                                 style="width: 150px; height: 150px;">
+                                <i class="fas fa-user fa-4x text-secondary"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <table class="table">
+                        <tr>
+                            <th>Student ID:</th>
+                            <td>{{ student.student_id }}</td>
+                        </tr>
+                        <tr>
+                            <th>Full Name:</th>
+                            <td>{{ student.name }}</td>
+                        </tr>
+                        <tr>
+                            <th>Email:</th>
+                            <td>{{ student.email }}</td>
+                        </tr>
+                        <tr>
+                            <th>Registration Date:</th>
+                            <td>{{ student.registration_date|date:"M d, Y" }}</td>
+                        </tr>
+                    </table>
+                    
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'edit_student' student.id %}" class="btn btn-warning">
+                            <i class="fas fa-edit"></i> Edit Student Information
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Borrowed Books Card -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">Borrowed Books History</h5>
+                </div>
+                <div class="card-body">
+                    {% if borrowed_books %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Book Title</th>
+                                        <th>Borrowed Date</th>
+                                        <th>Due Date</th>
+                                        <th>Return Date</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for book in borrowed_books %}
+                                        <tr>
+                                            <td>{{ book.book.title }}</td>
+                                            <td>{{ book.borrowed_date|date:"M d, Y" }}</td>
+                                            <td>{{ book.due_date|date:"M d, Y" }}</td>
+                                            <td>
+                                                {% if book.returned_date %}
+                                                    {{ book.returned_date|date:"M d, Y" }}
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if book.is_returned %}
+                                                    <span class="badge bg-success">Returned</span>
+                                                {% else %}
+                                                    {% if book.due_date < today %}
+                                                        <span class="badge bg-danger">Overdue</span>
+                                                    {% else %}
+                                                        <span class="badge bg-warning text-dark">Borrowed</span>
+                                                    {% endif %}
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">This student has not borrowed any books yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

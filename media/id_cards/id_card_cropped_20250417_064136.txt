@@ -1,0 +1,6 @@
+User:
+
+
+
+Extract name, ID, Course Name, Validity Date of ID Card. 
+Assistant: Abhishek Shah, Islington College, Hons, Networking & IT Security, BS(Hons) Computer Networking.

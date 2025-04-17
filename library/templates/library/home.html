@@ -118,27 +118,26 @@
                 <a href="{% url 'about' %}">ABOUT</a>
                 <a href="{% url 'main_page' %}">SERVICES</a>
                 <a href="#" class="button" style="margin-right: 15px; background-color: #4CAF50;">Student Login</a>
-                <form action="{% url 'admin_login' %}" method="get" style="display: inline;">
-                    <button type="submit" class="button" style="
-                        background-color: #2c3e50; 
-                        border: none; 
-                        cursor: pointer; 
-                        padding: 10px 25px; 
-                        color: white; 
-                        border-radius: 4px;
-                        font-weight: 500;
-                        transition: all 0.3s ease;
-                        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-                        display: inline-flex;
-                        align-items: center;
-                        gap: 8px;
-                    ">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 4px;">
-                            <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/>
-                        </svg>
-                        Admin Login
-                    </button>
-                </form>
+                <a href="/admin/" class="button" style="
+                    background-color: #2c3e50; 
+                    border: none; 
+                    cursor: pointer; 
+                    padding: 10px 25px; 
+                    color: white; 
+                    border-radius: 4px;
+                    font-weight: 500;
+                    transition: all 0.3s ease;
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 8px;
+                    text-decoration: none;
+                ">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 4px;">
+                        <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/>
+                    </svg>
+                    Admin Login
+                </a>
             </div>
         </div>
     </nav>

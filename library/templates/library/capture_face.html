@@ -1,0 +1,182 @@
+{% extends 'library/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4>Capture Face for {{ student.name }} (ID: {{ student.student_id }})</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="card mb-4">
+                                <div class="card-header bg-secondary text-white">
+                                    <h5>Camera Feed</h5>
+                                </div>
+                                <div class="card-body text-center">
+                                    <div class="mb-3">
+                                        <div id="video-container" class="position-relative">
+                                            <img id="video-feed" src="{% url 'video_feed' camera_type='face_capture' %}" class="img-fluid border" style="max-height: 400px;">
+                                            <div id="face-overlay" class="position-absolute" style="top: 50%; left: 50%; transform: translate(-50%, -50%); border: 2px dashed green; width: 200px; height: 250px;"></div>
+                                        </div>
+                                        <div class="mt-3">
+                                            <p class="text-muted">Please position your face within the green box and stay still.</p>
+                                            <p id="countdown" class="d-none fw-bold text-primary"></p>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-center">
+                                        <button id="capture-btn" class="btn btn-success me-2">
+                                            <i class="bi bi-camera"></i> Capture Face
+                                        </button>
+                                        <button id="retry-btn" class="btn btn-warning d-none">
+                                            <i class="bi bi-arrow-repeat"></i> Retry
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header bg-info text-white">
+                                    <h5>Student Information</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Name:</label>
+                                        <p>{{ student.name }}</p>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Student ID:</label>
+                                        <p>{{ student.student_id }}</p>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Email:</label>
+                                        <p>{{ student.email }}</p>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">ID Card:</label>
+                                        {% if student.id_card_image %}
+                                        <img src="{{ student.id_card_image.url }}" alt="ID Card" class="img-fluid img-thumbnail">
+                                        {% else %}
+                                        <p class="text-muted">No ID card image available</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div id="result-card" class="card d-none">
+                                <div class="card-header bg-success text-white">
+                                    <h5>Face Capture Result</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="text-center">
+                                                <h6>Captured Face</h6>
+                                                <img id="captured-image" src="" alt="Captured face" class="img-thumbnail" style="max-height: 200px;">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <form id="save-face-form" action="{% url 'capture_student_face' student.id %}" method="post" enctype="multipart/form-data">
+                                                {% csrf_token %}
+                                                <input type="hidden" id="face-image-input" name="face_image">
+                                                <div class="d-grid gap-2">
+                                                    <button type="submit" class="btn btn-primary">Save Face Image</button>
+                                                    <a href="{% url 'student_detail' student.id %}" class="btn btn-secondary">Cancel</a>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary">Back to Dashboard</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const captureBtn = document.getElementById('capture-btn');
+        const retryBtn = document.getElementById('retry-btn');
+        const resultCard = document.getElementById('result-card');
+        const capturedImage = document.getElementById('captured-image');
+        const faceImageInput = document.getElementById('face-image-input');
+        const countdown = document.getElementById('countdown');
+        
+        let captureTimer;
+        let countdownTimer;
+        let countdownValue = 3;
+        
+        captureBtn.addEventListener('click', function() {
+            // Show countdown
+            countdown.classList.remove('d-none');
+            countdownValue = 3;
+            countdown.textContent = `Capturing in ${countdownValue}...`;
+            
+            // Disable capture button during countdown
+            captureBtn.disabled = true;
+            
+            // Start countdown
+            countdownTimer = setInterval(function() {
+                countdownValue--;
+                countdown.textContent = `Capturing in ${countdownValue}...`;
+                
+                if (countdownValue <= 0) {
+                    clearInterval(countdownTimer);
+                    countdown.textContent = 'Capturing...';
+                    
+                    // Send capture request
+                    fetch(`{% url 'capture_frame' camera_type='face_capture' %}?student_id={{ student_id }}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                // Display captured image
+                                capturedImage.src = data.image_url;
+                                faceImageInput.value = data.image_data;
+                                
+                                // Show result card and retry button
+                                resultCard.classList.remove('d-none');
+                                retryBtn.classList.remove('d-none');
+                                
+                                // Hide countdown
+                                countdown.classList.add('d-none');
+                            } else {
+                                alert('Face capture failed: ' + data.error);
+                                captureBtn.disabled = false;
+                                countdown.classList.add('d-none');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('An error occurred during face capture.');
+                            captureBtn.disabled = false;
+                            countdown.classList.add('d-none');
+                        });
+                }
+            }, 1000);
+        });
+        
+        retryBtn.addEventListener('click', function() {
+            // Hide result card and retry button
+            resultCard.classList.add('d-none');
+            retryBtn.classList.add('d-none');
+            
+            // Enable capture button
+            captureBtn.disabled = false;
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %} 

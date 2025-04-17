@@ -18,8 +18,14 @@ from django.contrib import admin
 from django.urls import path,include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.shortcuts import redirect
+
+# Admin redirect view
+def admin_redirect(request):
+    return redirect('admin_login')
+
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('admin/', admin_redirect),  # Redirect to our custom admin login
     path('', include('library.urls')),
 ]
 # Serve media files during development
