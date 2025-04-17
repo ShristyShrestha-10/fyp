@@ -555,3 +555,27 @@ INFO 2025-04-17 07:55:09,578 id_card_processor 4749 130781374580416 Capture time
 INFO 2025-04-17 07:55:14,628 id_card_processor 4749 130781374580416 Capture triggered
 INFO 2025-04-17 07:55:14,702 id_card_processor 4749 130781374580416 Capture timer started
 INFO 2025-04-17 07:55:19,729 id_card_processor 4749 130781374580416 Capture triggered
+INFO 2025-04-17 08:03:13,395 views 10322 138515877394240 Loaded book mapping for tag 0: {'title': 'The Alchemist', 'author': 'Paolo Coehlo', 'genre': 'Fiction', 'isbn': '123545432543523'}
+INFO 2025-04-17 08:03:13,395 views 10322 138515877394240 Loaded book mapping for tag 1: {'title': 'The Idiot', 'author': 'John Smith', 'genre': 'Technology', 'isbn': '9780123456789'}
+INFO 2025-04-17 08:03:16,990 cameras 10322 138509174179520 Found working camera at index 1
+INFO 2025-04-17 08:03:17,459 cameras 10322 138509174179520 Successfully opened camera at index 1
+INFO 2025-04-17 08:03:18,547 cameras 10322 138509174179520 Camera initialized successfully
+INFO 2025-04-17 08:03:18,566 id_card_processor 10322 138509174179520 Using device: cuda
+INFO 2025-04-17 08:03:24,903 id_card_processor 10322 138509174179520 Capture timer started
+INFO 2025-04-17 08:03:29,971 id_card_processor 10322 138509174179520 Capture triggered
+INFO 2025-04-17 08:03:29,976 id_card_processor 10322 138509174179520 Box coordinates set to: (96, 72, 448, 336)
+INFO 2025-04-17 08:03:29,978 id_card_processor 10322 138509174179520 Images saved: /media/putu/EC42-8749/shaRD/librarain/media/id_cards/id_card_20250417_080329.jpg and /media/putu/EC42-8749/shaRD/librarain/media/id_cards/id_card_cropped_20250417_080329.jpg
+INFO 2025-04-17 08:03:31,193 id_card_processor 10322 138509174179520 OCR completed successfully. Text saved to: /media/putu/EC42-8749/shaRD/librarain/media/id_cards/id_card_cropped_20250417_080329.txt
+INFO 2025-04-17 08:03:31,193 id_card_processor 10322 138509174179520 Switched to face detection mode
+INFO 2025-04-17 08:03:31,196 id_card_processor 10322 138509174179520 Capture timer started
+INFO 2025-04-17 08:03:36,292 id_card_processor 10322 138509174179520 Capture triggered
+INFO 2025-04-17 08:03:36,411 id_card_processor 10322 138509174179520 Capture timer started
+INFO 2025-04-17 08:03:41,480 id_card_processor 10322 138509174179520 Capture triggered
+INFO 2025-04-17 08:03:41,599 id_card_processor 10322 138509174179520 Capture timer started
+INFO 2025-04-17 08:03:46,624 id_card_processor 10322 138509174179520 Capture triggered
+INFO 2025-04-17 08:03:46,744 id_card_processor 10322 138509174179520 Capture timer started
+INFO 2025-04-17 08:03:51,752 id_card_processor 10322 138509174179520 Capture triggered
+INFO 2025-04-17 08:03:51,829 id_card_processor 10322 138509174179520 Capture timer started
+INFO 2025-04-17 08:03:56,837 id_card_processor 10322 138509174179520 Capture triggered
+INFO 2025-04-17 08:04:20,130 cameras 10322 138509174179520 Camera stopped and resources released
+INFO 2025-04-17 08:04:20,130 cameras 10322 138509174179520 Camera stopped and resources released
