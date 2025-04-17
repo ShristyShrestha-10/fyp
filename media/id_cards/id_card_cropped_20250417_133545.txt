@@ -1,0 +1,6 @@
+User:
+
+
+
+Extract all the information from the ID card 
+Assistant: NPOINT4A23016

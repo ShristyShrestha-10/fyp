@@ -3,43 +3,30 @@ import numpy as np
 import os
 from datetime import datetime
 import logging
-import torch
-from PIL import Image
-from transformers import AutoProcessor, AutoModelForVision2Seq
-from transformers.image_utils import load_image
+import easyocr
 from .utils import (
     FileManager,
     MemoryManager,
     ErrorHandler,
     FrameProcessor
 )
+from django.utils import timezone
+from .models import Student
 
 logger = logging.getLogger(__name__)
 
 class IDCardProcessor:
     def __init__(self):
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        # Check for CUDA availability using OpenCV
+        self.device = "cuda" if cv2.cuda.getCudaEnabledDeviceCount() > 0 else "cpu"
         logger.info(f"Using device: {self.device}")
         
         # Clear GPU memory
         MemoryManager.clear_gpu_memory()
             
-        # Load model with optimized settings
-        self.processor = AutoProcessor.from_pretrained("HuggingFaceTB/SmolVLM-256M-Instruct")
-        self.model = AutoModelForVision2Seq.from_pretrained(
-            "HuggingFaceTB/SmolVLM-256M-Instruct",
-            torch_dtype=torch.bfloat16,
-            _attn_implementation="flash_attention_2" if self.device == "cuda" else "eager",
-            device_map="auto" if self.device == "cuda" else None,
-        ).to(self.device)
+        # Initialize EasyOCR reader
+        self.reader = easyocr.Reader(['en'], gpu=self.device == "cuda")
         
-        # Set model to evaluation mode
-        self.model.eval()
-        
-        # Optimize model for inference
-        if self.device == "cuda":
-            self.model = torch.compile(self.model)
-            
         self.capture_timer = 5  # seconds for each mode
         self.start_time = None
         self.captured = False
@@ -122,59 +109,96 @@ class IDCardProcessor:
             return None, None
     
     def perform_ocr(self, image_path):
-        """Perform OCR on the ID card image using SmolVLM with optimized settings"""
+        """Perform OCR on the ID card image using EasyOCR"""
         try:
             if not os.path.exists(image_path):
                 ErrorHandler.handle_error(f"Image file not found: {image_path}", "OCR")
                 return None, None
                 
-            # Load image directly
-            pil_image = load_image(image_path)
+            # Read the image
+            image = cv2.imread(image_path)
+            if image is None:
+                raise ValueError("Failed to load image")
             
-            # Create input messages
-            messages = [
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "image"},
-                        {"type": "text", "text": "Extract name, ID, Course Name, Validity Date of ID Card. "}
-                    ]
-                },
-            ]
+            # Preprocess the image
+            # Convert to grayscale
+            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
             
-            # Prepare inputs with optimized settings
-            prompt = self.processor.apply_chat_template(messages, add_generation_prompt=True)
-            inputs = self.processor(text=prompt, images=[pil_image], return_tensors="pt")
-            inputs = inputs.to(self.device)
+            # Apply adaptive thresholding
+            thresh = cv2.adaptiveThreshold(
+                gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
+                cv2.THRESH_BINARY, 11, 2
+            )
             
-            # Generate outputs with optimized parameters
-            with torch.no_grad():
-                generated_ids = self.model.generate(
-                    **inputs,
-                    max_new_tokens=200,  # Reduced from 500 to speed up inference
-                    num_beams=1,  # Use greedy decoding for speed
-                    do_sample=False,  # Disable sampling for faster inference
-                    early_stopping=True,  # Stop when the model is confident
-                    pad_token_id=self.processor.tokenizer.pad_token_id,
-                    eos_token_id=self.processor.tokenizer.eos_token_id,
-                )
-                
-            extracted_text = self.processor.batch_decode(
-                generated_ids,
-                skip_special_tokens=True,
-            )[0]
+            # Perform OCR
+            results = self.reader.readtext(thresh)
+            
+            # Extract text with confidence scores
+            extracted_text = []
+            for detection in results:
+                text = detection[1]
+                confidence = detection[2]
+                if confidence > 0.4:  # Only keep high confidence detections
+                    extracted_text.append(text)
+            
+            # Join all text with newlines
+            final_text = '\n'.join(extracted_text)
             
             # Save text to file
             text_file_path = image_path.replace('.jpg', '.txt')
             with open(text_file_path, 'w') as f:
-                f.write(extracted_text)
-            
-            # Clear GPU memory
-            MemoryManager.clear_gpu_memory()
+                f.write(final_text)
             
             logger.info(f"OCR completed successfully. Text saved to: {text_file_path}")
-            return extracted_text, text_file_path
+            return final_text, text_file_path
             
         except Exception as e:
             ErrorHandler.handle_error(e, "OCR processing")
             return None, None
+
+    def process_id_card(self, image_path):
+        """Process ID card image and extract student details"""
+        try:
+            # Load and preprocess image
+            image = cv2.imread(image_path)
+            if image is None:
+                raise ValueError("Failed to load image")
+            
+            # Extract text from ID card
+            extracted_text = self.perform_ocr(image)
+            if not extracted_text:
+                raise ValueError("Failed to extract text from ID card")
+            
+            # Extract student details
+            student_details = self.extract_student_details(extracted_text)
+            
+            # Check if both name and ID are present
+            if not student_details.get('name') or not student_details.get('id'):
+                raise ValueError("Name and ID are required fields")
+            
+            # Detect and extract face from ID card
+            face_encoding = self.detect_face(image)
+            if face_encoding is None:
+                raise ValueError("No face detected in ID card")
+            
+            # Save processed image with student details
+            processed_image_path = self.save_processed_image(image, student_details)
+            
+            # Create student record with only name and ID
+            student = Student.objects.create(
+                name=student_details['name'],
+                student_id=student_details['id'],
+                face_encoding=face_encoding,
+                face_verified=False,  # Will be verified when student shows up in person
+                registered_at=timezone.now()
+            )
+            
+            # Save ID card image path
+            student.id_card_image = processed_image_path
+            student.save()
+            
+            return student
+            
+        except Exception as e:
+            logger.error(f"Error processing ID card: {str(e)}")
+            raise

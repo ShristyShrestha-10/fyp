@@ -21,6 +21,7 @@ from django.db.models import Count
 from django.utils import timezone
 from .camera_factory import CameraFactory
 from .utils import ErrorHandler
+from django.contrib import messages
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -377,47 +378,52 @@ def admin_logout(request):
     logout(request)
     return redirect('home')
 
-@login_required(login_url='admin_login')
+@login_required
 def admin_dashboard(request):
-    if not request.user.is_staff:
-        return redirect('admin_login')
+    """Admin dashboard view"""
+    try:
+        # Get basic statistics
+        total_books = Book.objects.count()
+        total_students = Student.objects.filter(student_id__isnull=False).count()
+        books_borrowed = BorrowedBook.objects.filter(is_returned=False).count()
+        overdue_books = BorrowedBook.objects.filter(
+            is_returned=False,
+            due_date__lt=timezone.now()
+        ).count()
         
-    # Get total number of students
-    total_students = Student.objects.count()
-    
-    # Get total number of books
-    total_books = Book.objects.count()
-    
-    # Get number of borrowed books
-    books_borrowed = BorrowedBook.objects.filter(is_returned=False).count()
-    
-    # Get number of overdue books
-    overdue_books = BorrowedBook.objects.filter(
-        is_returned=False,
-        due_date__lt=timezone.now()
-    ).count()
-    
-    # Get recent activities
-    recent_activities = BorrowedBook.objects.all().order_by('-borrowed_date')[:5]
-    
-    # Get most borrowed books
-    most_borrowed = Book.objects.annotate(
-        borrow_count=Count('borrowedbook')
-    ).order_by('-borrow_count')[:5]
-    
-    # Get recently detected books (those with last_detected not null)
-    recently_detected = Book.objects.filter(
-        last_detected__isnull=False
-    ).order_by('-last_detected')[:5]
-    
-    context = {
-        'total_students': total_students,
-        'total_books': total_books,
-        'books_borrowed': books_borrowed,
-        'overdue_books': overdue_books,
-        'recent_activities': recent_activities,
-        'most_borrowed': most_borrowed,
-        'recently_detected': recently_detected,
-    }
-    
-    return render(request, 'library/admin_dashboard.html', context)
+        # Get verified students (those with both name and ID)
+        verified_students = Student.objects.filter(
+            student_id__isnull=False,
+            name__isnull=False
+        ).order_by('-registered_at')
+        
+        # Get recent registrations (only name and ID)
+        recent_registrations = Student.objects.filter(
+            student_id__isnull=False,
+            name__isnull=False
+        ).order_by('-registered_at')[:5]
+        
+        context = {
+            'total_books': total_books,
+            'total_students': total_students,
+            'books_borrowed': books_borrowed,
+            'overdue_books': overdue_books,
+            'verified_students': verified_students,
+            'recent_registrations': recent_registrations,
+        }
+        
+        return render(request, 'library/admin_dashboard.html', context)
+        
+    except Exception as e:
+        logger.error(f"Error in admin dashboard: {str(e)}")
+        messages.error(request, "An error occurred while loading the dashboard")
+        return redirect('home')
+
+def student_login(request):
+    """View for student login with face verification"""
+    if request.method == 'POST':
+        # Handle face verification and login
+        pass
+    return render(request, 'library/student_login.html', {
+        'camera_type': 'student_login'
+    })

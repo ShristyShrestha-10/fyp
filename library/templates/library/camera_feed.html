@@ -54,7 +54,7 @@
 
     function startStream() {
         // Set the video source to the streaming endpoint
-        video.src = "{% url 'video_feed' 'id_card' %}";
+        video.src = "{% url 'video_feed' camera_type=scanner_type %}";
         statusDiv.textContent = 'Camera started';
         startButton.disabled = true;
         captureButton.disabled = false;
@@ -62,17 +62,22 @@
 
     async function captureFrame() {
         try {
-            const response = await fetch(`/capture-frame/${scannerType}/`);
+            const response = await fetch(`{% url 'capture_frame' camera_type=scanner_type %}`);
             const data = await response.json();
             
             if (data.status === 'success') {
                 if (data.text) {
                     resultDiv.textContent = 'Extracted text: ' + data.text;
+                } else if (data.detected_books) {
+                    resultDiv.innerHTML = '<h4>Detected Books:</h4>';
+                    data.detected_books.forEach(book => {
+                        resultDiv.innerHTML += `<p><strong>${book.title}</strong> by ${book.author}</p>`;
+                    });
                 } else {
                     resultDiv.textContent = 'Frame captured successfully';
                 }
             } else {
-                statusDiv.textContent = 'Error: ' + data.error;
+                statusDiv.textContent = 'Error: ' + (data.message || data.error);
             }
         } catch (error) {
             statusDiv.textContent = 'Error capturing frame: ' + error.message;

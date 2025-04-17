@@ -1,6 +1,7 @@
 from django.contrib import admin
 from .models import Book, Student, BorrowedBook
 
+@admin.register(Book)
 class BookAdmin(admin.ModelAdmin):
     list_display = ('title', 'author', 'isbn', 'genre', 'tag_id', 'available', 'last_detected')
     list_filter = ('genre', 'available')
@@ -18,16 +19,15 @@ class BookAdmin(admin.ModelAdmin):
         }),
     )
 
+@admin.register(Student)
 class StudentAdmin(admin.ModelAdmin):
-    list_display = ('name', 'student_id', 'email')
-    search_fields = ('name', 'student_id', 'email')
+    list_display = ('name', 'student_id', 'registered_at')
+    search_fields = ('name', 'student_id')
+    list_filter = ('registered_at',)
+    readonly_fields = ('face_encoding',)
 
+@admin.register(BorrowedBook)
 class BorrowedBookAdmin(admin.ModelAdmin):
-    list_display = ('book', 'student', 'borrowed_date', 'due_date', 'is_returned', 'returned_date')
-    list_filter = ('is_returned',)
-    search_fields = ('book__title', 'student__name')
-    date_hierarchy = 'borrowed_date'
-
-admin.site.register(Book, BookAdmin)
-admin.site.register(Student, StudentAdmin)
-admin.site.register(BorrowedBook, BorrowedBookAdmin)
+    list_display = ('book', 'student', 'borrowed_date', 'due_date', 'is_returned')
+    search_fields = ('book__title', 'student__name', 'student__student_id')
+    list_filter = ('is_returned', 'borrowed_date')

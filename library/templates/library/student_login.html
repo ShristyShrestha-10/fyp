@@ -1,0 +1,180 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Login</title>
+    <link rel="stylesheet" href="{% static 'library/main.css' %}">
+    <style>
+        .video-container {
+            max-width: 960px;
+            width: 90%;
+            margin: 20px auto;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        
+        #video-feed {
+            width: 100%;
+            height: auto;
+            display: block;
+            aspect-ratio: 4/3;
+        }
+
+        .login-container {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .button-container {
+            margin: 20px 0;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            margin: 0 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-start {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .btn-end {
+            background-color: #f44336;
+            color: white;
+        }
+
+        .btn:hover {
+            opacity: 0.8;
+        }
+
+        .status-message {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .error-message {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            color: #ff4444;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="top-banner">
+        <p>Student Login</p>
+    </div>
+
+    <nav class="navigation">
+        <div class="container">
+            <a href="{% url 'home' %}" class="logo">
+                <span class="logo-text">L</span>
+                <span class="logo-text">I</span>
+                <span class="logo-text">B</span>
+                <span class="logo-text">R</span>
+                <span class="logo-text">A</span>
+                <span class="logo-text">R</span>
+                <span class="logo-text">Y</span>
+            </a>
+            <div class="nav-links">
+                <a href="{% url 'home' %}">HOME</a>
+                <a href="{% url 'about' %}">ABOUT</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="login-container">
+        <h1>Student Login</h1>
+        <p>Please position yourself in front of the camera</p>
+        
+        <div class="video-container">
+            <img id="video-feed" alt="Camera Feed">
+            <div id="status-message" class="status-message"></div>
+            <div id="error-message" class="error-message"></div>
+        </div>
+
+        <div class="button-container">
+            <button id="start-btn" class="btn btn-start">Start Camera</button>
+            <button id="end-btn" class="btn btn-end">End Camera</button>
+        </div>
+    </div>
+
+    <script>
+        let isCameraActive = false;
+        const startBtn = document.getElementById('start-btn');
+        const endBtn = document.getElementById('end-btn');
+        const videoFeed = document.getElementById('video-feed');
+        const statusMessage = document.getElementById('status-message');
+        const errorMessage = document.getElementById('error-message');
+
+        function startCamera() {
+            if (isCameraActive) return;
+            
+            // Show video feed
+            videoFeed.src = "{% url 'video_feed' camera_type='student_login' %}";
+            
+            // Set up event listeners
+            videoFeed.onload = function() {
+                isCameraActive = true;
+                startBtn.disabled = true;
+                endBtn.disabled = false;
+            };
+            
+            videoFeed.onerror = function() {
+                stopCamera();
+                window.location.href = "{% url 'home' %}";
+            };
+        }
+
+        function stopCamera() {
+            if (!isCameraActive) return;
+
+            // Stop the video feed
+            videoFeed.src = '';
+            isCameraActive = false;
+            startBtn.disabled = false;
+            endBtn.disabled = true;
+            statusMessage.textContent = '';
+            errorMessage.textContent = '';
+
+            // Redirect to home page
+            window.location.href = "{% url 'home' %}";
+        }
+
+        // Add event listeners for buttons
+        startBtn.addEventListener('click', startCamera);
+        endBtn.addEventListener('click', stopCamera);
+
+        // Initialize button states
+        endBtn.disabled = true;
+
+        // Clean up on page unload
+        window.addEventListener('beforeunload', function() {
+            if (isCameraActive) {
+                stopCamera();
+            }
+        });
+    </script>
+</body>
+</html> 

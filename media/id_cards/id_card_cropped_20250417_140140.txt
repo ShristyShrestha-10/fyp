@@ -1,0 +1,7 @@
+User:
+
+
+
+Extract all the information from the ID card 
+Assistant: Islington college kathmandou
+The image does not contain any ID cards.

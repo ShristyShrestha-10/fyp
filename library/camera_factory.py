@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from .cameras import IDCardScanner, BorrowCamera, ReturnCamera
+from .cameras import IDCardScanner, BorrowCamera, ReturnCamera, StudentLoginCamera
 from .utils import ErrorHandler
 
 class CameraStrategy(ABC):
@@ -31,6 +31,14 @@ class ReturnStrategy(CameraStrategy):
         # Return specific processing
         pass
 
+class StudentLoginStrategy(CameraStrategy):
+    def __init__(self):
+        pass
+
+    def process_frame(self, frame):
+        # Student login specific processing
+        pass
+
 class CameraFactory:
     @staticmethod
     def create_camera(camera_type, **kwargs):
@@ -41,6 +49,8 @@ class CameraFactory:
                 return BorrowCamera()
             elif camera_type == 'return':
                 return ReturnCamera()
+            elif camera_type == 'student_login':
+                return StudentLoginCamera()
             else:
                 raise ValueError(f"Unknown camera type: {camera_type}")
         except Exception as e:
@@ -55,6 +65,8 @@ class CameraFactory:
                 return BorrowStrategy(kwargs.get('book_detector'))
             elif camera_type == 'return':
                 return ReturnStrategy(kwargs.get('book_detector'))
+            elif camera_type == 'student_login':
+                return StudentLoginStrategy()
             else:
                 raise ValueError(f"Unknown camera type: {camera_type}")
         except Exception as e:

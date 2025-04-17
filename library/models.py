@@ -1,4 +1,6 @@
 from django.db import models
+import numpy as np
+import pickle
 from django.utils import timezone
 
 # Create your models here.
@@ -22,10 +24,20 @@ class Book(models.Model):
 class Student(models.Model):
     name = models.CharField(max_length=100)
     student_id = models.CharField(max_length=20, unique=True)
-    email = models.EmailField(blank=True, null=True)
-    id_card_image = models.ImageField(upload_to='id_cards/')
-    registration_date = models.DateTimeField(auto_now_add=True)
+    id_valid_until = models.DateField()
+    face_encoding = models.BinaryField(null=True, blank=True)
+    registered_at = models.DateTimeField(auto_now_add=True)
+    id_card_image = models.ImageField(
+    upload_to='id_cards/',
+    null=True,
+    blank=True,
+    default='default_id.jpg'  # Add this default value
+)
 
+    def get_face_encoding(self):
+        """Convert binary face encoding back to numpy array"""
+        return pickle.loads(self.face_encoding)
+        
     def __str__(self):
         return f"{self.name} ({self.student_id})"
 
