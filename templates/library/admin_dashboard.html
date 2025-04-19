@@ -63,21 +63,35 @@
             <table class="table">
                 <thead>
                     <tr>
-                        <th>Name</th>
+                        <th>Photo</th>
+                        <th>Full Name</th>
+                        <th>First Name</th>
+                        <th>Last Name</th>
                         <th>ID</th>
-                        <th>Date</th>
+                        <th>Registration Date</th>
                         <th>Status</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for student in recent_registrations %}
                     <tr>
-                        <td>{{ student.name }}</td>
-                        <td>{{ student.student_id }}</td>
-                        <td>{{ student.registered_at|date:"M d, Y" }}</td>
                         <td>
-                            {% if student.face_encoding %}
-                            <span class="badge badge-success">Face Verified</span>
+                            {% if student.face_image %}
+                                <img src="{{ student.face_image.url }}" alt="Face" class="face-thumbnail">
+                            {% elif student.id_card_image %}
+                                <img src="{{ student.id_card_image.url }}" alt="ID Card" class="face-thumbnail">
+                            {% else %}
+                                <span class="no-image">No image</span>
+                            {% endif %}
+                        </td>
+                        <td><strong>{{ student.name }}</strong></td>
+                        <td>{{ student.first_name|default:"-" }}</td>
+                        <td>{{ student.last_name|default:"-" }}</td>
+                        <td>{{ student.student_id }}</td>
+                        <td>{{ student.registered_at|date:"M d, Y H:i" }}</td>
+                        <td>
+                            {% if student.face_verified %}
+                            <span class="badge badge-success">Verified</span>
                             {% else %}
                             <span class="badge badge-warning">Pending</span>
                             {% endif %}
@@ -88,6 +102,41 @@
             </table>
             {% else %}
             <p class="no-data">No recent registrations.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Recent Face-Recognized Registrations -->
+    <div class="card">
+        <div class="card-header">
+            <h2>Recent Face-Recognized Registrations</h2>
+        </div>
+        <div class="card-body">
+            {% if face_recognized_registrations %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>First Name</th>
+                        <th>Last Name</th>
+                        <th>ID</th>
+                        <th>Course</th>
+                        <th>Registration Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in face_recognized_registrations %}
+                    <tr>
+                        <td>{{ student.first_name|default:"-" }}</td>
+                        <td>{{ student.last_name|default:"-" }}</td>
+                        <td>{{ student.student_id }}</td>
+                        <td>{{ student.course|default:"Unknown" }}</td>
+                        <td>{{ student.registered_at|date:"M d, Y H:i" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="no-data">No face-recognized registrations yet.</p>
             {% endif %}
         </div>
     </div>
@@ -163,6 +212,20 @@
 .student-info p {
     margin: 5px 0;
     color: #666;
+}
+
+.face-thumbnail {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 2px solid #ddd;
+}
+
+.no-image {
+    color: #999;
+    font-style: italic;
+    font-size: 0.9em;
 }
 
 .badge {

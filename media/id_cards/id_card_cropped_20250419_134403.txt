@@ -1,0 +1,6 @@
+User:
+
+
+
+What is the name and ID card number mentioned in this ID Card? Please format the response as 'Name: [name], ID: [id]'
+Assistant: Emanuel JR, 10.1992.

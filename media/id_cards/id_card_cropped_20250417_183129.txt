@@ -1,0 +1,6 @@
+User:
+
+
+
+This is an ID card. Extract ONLY the full name of the person from this ID card. Return only the name without any explanations or additional text.
+Assistant: Islington College Kannadu.

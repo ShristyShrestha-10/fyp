@@ -151,40 +151,49 @@
     }
 </style>
 
+<script>
+function handleImageError(img) {
+    img.src = "{% static 'library/images/book.jpeg' %}";
+}
+</script>
+
 <div class="recommendations-container">
     <a href="{% url 'main_page' %}" class="back-button">← Back to Services</a>
     
     <h1 class="recommendations-title">Book Recommendation System</h1>
     
     <div class="selection-area">
-        <label for="book-select" class="select-label">Select a book:</label>
-        <select id="book-select" class="book-select">
-            {% for book in books %}
-                <option value="{{ book.id }}">{{ book.title }}</option>
-            {% endfor %}
-        </select>
-        
-        <button id="recommend-btn" class="recommend-button">Get Recommendations</button>
+        <form method="get" action="{% url 'recommendations' %}">
+            <label for="book-select" class="select-label">Select a book:</label>
+            <select id="book-select" name="book_title" class="book-select">
+                <option value="">-- Select a book --</option>
+                {% for book in books %}
+                    <option value="{{ book }}" {% if book == selected_book %}selected{% endif %}>{{ book }}</option>
+                {% endfor %}
+            </select>
+            
+            <button type="submit" class="recommend-button">Get Recommendations</button>
+        </form>
     </div>
     
     <div class="recommendations">
-        <h2>Top Recommended Books:</h2>
+        {% if selected_book %}
+            <h2>Books similar to "{{ selected_book }}":</h2>
+        {% else %}
+            <h2>Top Recommended Books:</h2>
+        {% endif %}
+        
         {% if recommended_books %}
         <div class="books-container">
             {% for book in recommended_books %}
             <div class="book">
-                {% if book.cover_image %}
-                    <img src="{{ book.cover_image.url }}" alt="{{ book.title }}">
-                {% else %}
-                    <div class="book-placeholder">
-                        <i class="fas fa-book"></i>
-                        <div class="book-placeholder-text">No Cover Image Available</div>
-                    </div>
-                {% endif %}
+                <img src="{% static 'library/images/book.jpeg' %}" alt="{{ book.title }}">
                 <div class="book-title">{{ book.title }}</div>
                 <div class="book-info">
                     <p><strong>Author:</strong> {{ book.author }}</p>
-                    <p><strong>Genre:</strong> {{ book.genre }}</p>
+                    {% if book.genre %}
+                        <p><strong>Genre:</strong> {{ book.genre }}</p>
+                    {% endif %}
                     <p class="book-rating">
                         {% for i in "12345"|make_list %}
                             {% if forloop.counter <= book.rating %}
@@ -199,18 +208,18 @@
             {% endfor %}
         </div>
         {% else %}
-        <div class="empty-state">
-            <h3>No recommendations yet</h3>
-            <p>Select a book and click "Get Recommendations" to see similar books you might enjoy.</p>
-        </div>
+            {% if selected_book %}
+                <div class="empty-state">
+                    <h3>No recommendations found</h3>
+                    <p>We couldn't find any similar books for "{{ selected_book }}". Please try another book.</p>
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <h3>No recommendations yet</h3>
+                    <p>Select a book and click "Get Recommendations" to see similar books you might enjoy.</p>
+                </div>
+            {% endif %}
         {% endif %}
     </div>
 </div>
-
-<script>
-    document.getElementById('recommend-btn').addEventListener('click', function() {
-        const selectedBook = document.getElementById('book-select').value;
-        window.location.href = `?book_id=${selectedBook}`;
-    });
-</script>
 {% endblock %} 

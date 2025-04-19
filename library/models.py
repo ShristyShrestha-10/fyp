@@ -23,16 +23,25 @@ class Book(models.Model):
 
 class Student(models.Model):
     name = models.CharField(max_length=100)
+    first_name = models.CharField(max_length=50, null=True, blank=True)
+    last_name = models.CharField(max_length=50, null=True, blank=True)
     student_id = models.CharField(max_length=20, unique=True)
     id_valid_until = models.DateField()
     face_encoding = models.BinaryField(null=True, blank=True)
+    face_verified = models.BooleanField(default=False)
     registered_at = models.DateTimeField(auto_now_add=True)
+    course = models.CharField(max_length=100, null=True, blank=True)
     id_card_image = models.ImageField(
-    upload_to='id_cards/',
-    null=True,
-    blank=True,
-    default='default_id.jpg'  # Add this default value
-)
+        upload_to='id_cards/',
+        null=True,
+        blank=True,
+        default='default_id.jpg'
+    )
+    face_image = models.ImageField(
+        upload_to='faces/',
+        null=True,
+        blank=True
+    )
 
     def get_face_encoding(self):
         """Convert binary face encoding back to numpy array"""
@@ -40,6 +49,20 @@ class Student(models.Model):
         
     def __str__(self):
         return f"{self.name} ({self.student_id})"
+
+class StudentLogin(models.Model):
+    student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    login_time = models.DateTimeField(default=timezone.now)
+    logout_time = models.DateTimeField(null=True, blank=True)
+    status = models.CharField(max_length=20, default='Verified')
+    similarity_score = models.FloatField(default=0.0)
+    is_active = models.BooleanField(default=True)
+    
+    def __str__(self):
+        return f"{self.student.name} login at {self.login_time.strftime('%Y-%m-%d %H:%M:%S')}"
+    
+    class Meta:
+        ordering = ['-login_time']
 
 class BorrowedBook(models.Model):
     book = models.ForeignKey(Book, on_delete=models.CASCADE)

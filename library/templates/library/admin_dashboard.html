@@ -1,7 +1,42 @@
 {% extends 'library/base.html' %}
 {% load static %}
+{% load library_extras %}
 
 {% block content %}
+<style>
+    .video-container {
+        position: relative;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    .status-message {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        background-color: rgba(0, 0, 0, 0.6);
+        color: white;
+        padding: 5px 10px;
+        border-radius: 4px;
+        z-index: 10;
+    }
+    .error-message {
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+        background-color: rgba(220, 53, 69, 0.8);
+        color: white;
+        padding: 5px 10px;
+        border-radius: 4px;
+        z-index: 10;
+    }
+    #video-feed {
+        background: #000;
+        width: 100%;
+        height: auto;
+        aspect-ratio: 4/3;
+    }
+</style>
 <div class="container mt-4">
     <h2>Admin Dashboard</h2>
     
@@ -43,33 +78,65 @@
 
     <!-- Verified Students -->
     <div class="card mb-4">
-        <div class="card-header">
-            <h4>Verified Students</h4>
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">Verified Students</h4>
+            <span class="badge bg-success">{{ verified_students|length }} Students</span>
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table">
+                <table class="table table-hover align-middle">
                     <thead>
                         <tr>
-                            <th>Student Name</th>
+                            <th>Photo</th>
+                            <th>Name</th>
                             <th>Student ID</th>
-                            <th>Registration Date</th>
+                            <th>Registered Date</th>
                             <th>Status</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for student in verified_students %}
                         <tr>
+                            <td>
+                                {% if student.face_image %}
+                                    <img src="{{ student.face_image.url }}" alt="Student photo" class="rounded-circle" style="width: 50px; height: 50px; object-fit: cover;">
+                                {% else %}
+                                    <div class="bg-secondary text-white d-flex align-items-center justify-content-center rounded-circle" style="width: 50px; height: 50px;">
+                                        <i class="bi bi-person"></i>
+                                    </div>
+                                {% endif %}
+                            </td>
                             <td>{{ student.name }}</td>
                             <td>{{ student.student_id }}</td>
-                            <td>{{ student.registration_date|date:"M d, Y" }}</td>
+                            <td>{{ student.registered_at|date:"M d, Y" }}</td>
                             <td>
-                                <span class="badge bg-success">Verified</span>
+                                {% if student.face_verified %}
+                                    <span class="badge bg-success">Verified</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-sm btn-info view-student" 
+                                            data-student-id="{{ student.id }}" 
+                                            data-bs-toggle="tooltip" 
+                                            title="View Details">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-danger delete-student" 
+                                            data-student-id="{{ student.id }}" 
+                                            data-bs-toggle="tooltip" 
+                                            title="Delete Student">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="4" class="text-center">No verified students yet</td>
+                            <td colspan="6" class="text-center">No verified students found</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -80,37 +147,65 @@
 
     <!-- Recent Registrations -->
     <div class="card mb-4">
-        <div class="card-header">
-            <h4>Recent Registrations</h4>
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">Recent Registrations</h4>
+            <span class="badge bg-primary">Last 15 registrations</span>
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table">
+                <table class="table table-hover align-middle">
                     <thead>
                         <tr>
-                            <th>Student Name</th>
+                            <th>Photo</th>
+                            <th>Name</th>
                             <th>Student ID</th>
-                            <th>Registration Date</th>
+                            <th>Registered Date</th>
                             <th>Status</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for student in recent_registrations %}
                         <tr>
+                            <td>
+                                {% if student.face_image %}
+                                    <img src="{{ student.face_image.url }}" alt="Student photo" class="rounded-circle" style="width: 50px; height: 50px; object-fit: cover;">
+                                {% else %}
+                                    <div class="bg-secondary text-white d-flex align-items-center justify-content-center rounded-circle" style="width: 50px; height: 50px;">
+                                        <i class="bi bi-person"></i>
+                                    </div>
+                                {% endif %}
+                            </td>
                             <td>{{ student.name }}</td>
                             <td>{{ student.student_id }}</td>
-                            <td>{{ student.registration_date|date:"M d, Y" }}</td>
+                            <td>{{ student.registered_at|date:"M d, Y" }}</td>
                             <td>
                                 {% if student.face_verified %}
-                                <span class="badge bg-success">Verified</span>
+                                    <span class="badge bg-success">Verified</span>
                                 {% else %}
-                                <span class="badge bg-warning">Pending</span>
+                                    <span class="badge bg-warning">Pending</span>
                                 {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-sm btn-info view-student" 
+                                            data-student-id="{{ student.id }}" 
+                                            data-bs-toggle="tooltip" 
+                                            title="View Details">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-danger delete-student" 
+                                            data-student-id="{{ student.id }}" 
+                                            data-bs-toggle="tooltip" 
+                                            title="Delete Student">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="4" class="text-center">No registrations yet</td>
+                            <td colspan="6" class="text-center">No recent registrations found</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -119,72 +214,289 @@
         </div>
     </div>
 
-    <!-- Recently Detected Books -->
+    <!-- Currently Logged-In Students -->
     <div class="card mb-4">
-        <div class="card-header">
-            <h4>Recently Detected Books</h4>
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h4>Currently Logged-In Students</h4>
+            <span class="badge bg-primary">{{ current_logins|length }} Active</span>
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table">
+                <table class="table table-striped">
                     <thead>
                         <tr>
+                            <th>Photo</th>
+                            <th>Name</th>
+                            <th>Student ID</th>
+                            <th>Login Time</th>
+                            <th>Status</th>
+                            <th>Similarity Score</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for login in current_logins %}
+                        <tr>
+                            <td>
+                                {% if login.student.face_image %}
+                                <img src="{{ login.student.face_image.url }}" alt="{{ login.student.name }}" class="rounded-circle" width="50" height="50" style="object-fit: cover; border: 3px solid #28a745;">
+                                {% elif login.student.id_card_image %}
+                                <img src="{{ login.student.id_card_image.url }}" alt="{{ login.student.name }}" class="rounded-circle" width="50" height="50" style="object-fit: cover; border: 3px solid #28a745;">
+                                {% else %}
+                                <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                    <i class="fas fa-user text-white"></i>
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td>{{ login.student.name }}</td>
+                            <td>{{ login.student.student_id }}</td>
+                            <td>{{ login.login_time|date:"M d, Y H:i" }}</td>
+                            <td>
+                                <span class="badge {% if login.similarity_score >= 0.5 %}bg-success{% else %}bg-danger{% endif %}">
+                                    {% if login.similarity_score >= 0.5 %}Verified{% else %}Not Verified{% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                {% if login.similarity_score > 0 %}
+                                {{ login.similarity_score|similarity_progress }}
+                                {% else %}
+                                <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center">No students currently logged in.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Student Registration Modal -->
+    <div class="modal fade" id="registerStudentModal" tabindex="-1" aria-labelledby="registerStudentModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="registerStudentModalLabel">Register New Student</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header">Scan ID Card</div>
+                                <div class="card-body">
+                                    <div class="video-container mb-3">
+                                        <img id="video-feed" alt="Camera feed" class="img-fluid">
+                                        <div id="status-message" class="status-message"></div>
+                                        <div id="error-message" class="error-message"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+        <div class="col-md-6">
+            <div class="card">
+                                <div class="card-header">Registration Status</div>
+                                <div class="card-body">
+                                    <div class="student-info mb-3">
+                                        <h5>Student Details</h5>
+                                        <div id="student-name">Name: <span>-</span></div>
+                                        <div id="student-id">ID: <span>-</span></div>
+                                    </div>
+                                    <div class="face-status mb-3">
+                                        <h5>Face Detection</h5>
+                                        <div id="face-detected">Face Detected: <span class="badge bg-secondary">No</span></div>
+                                        <div id="face-saved">Face Saved: <span class="badge bg-secondary">No</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" id="start-camera-btn" class="btn btn-primary">Start Camera</button>
+                    <button type="button" id="stop-camera-btn" class="btn btn-secondary" disabled>Stop Camera</button>
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- JavaScript for Student Registration -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const videoFeed = document.getElementById('video-feed');
+            const statusMessage = document.getElementById('status-message');
+            const errorMessage = document.getElementById('error-message');
+            const startCameraBtn = document.getElementById('start-camera-btn');
+            const stopCameraBtn = document.getElementById('stop-camera-btn');
+            
+            const studentNameEl = document.querySelector('#student-name span');
+            const studentIdEl = document.querySelector('#student-id span');
+            const faceDetectedEl = document.querySelector('#face-detected span');
+            const faceSavedEl = document.querySelector('#face-saved span');
+            
+            let isCameraActive = false;
+            let statusCheckInterval = null;
+            
+            // Start the camera
+            startCameraBtn.addEventListener('click', function() {
+                if (isCameraActive) return;
+                
+                videoFeed.src = "{% url 'video_feed' camera_type='id_card' %}";
+                startCameraBtn.disabled = true;
+                stopCameraBtn.disabled = false;
+                isCameraActive = true;
+                
+                // Start status checking
+                statusCheckInterval = setInterval(checkStatus, 1000);
+            });
+            
+            // Stop the camera
+            stopCameraBtn.addEventListener('click', function() {
+                if (!isCameraActive) return;
+                
+                // Stop status checking
+                if (statusCheckInterval) {
+                    clearInterval(statusCheckInterval);
+                    statusCheckInterval = null;
+                }
+                
+                // Stop the camera
+                fetch("{% url 'stop_scanner' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: 'camera_type=id_card'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Camera stopped:', data);
+                })
+                .catch(error => {
+                    console.error('Error stopping camera:', error);
+                });
+                
+                videoFeed.src = '';
+                isCameraActive = false;
+                startCameraBtn.disabled = false;
+                stopCameraBtn.disabled = true;
+            });
+            
+            // Check camera status
+            function checkStatus() {
+                if (!isCameraActive) return;
+                
+                fetch("{% url 'get_face_detection_status' %}?camera_type=id_card")
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            errorMessage.textContent = data.error;
+                        } else {
+                            errorMessage.textContent = '';
+                        }
+                        
+                        statusMessage.textContent = data.status;
+                        
+                        // Update face detection status
+                        faceDetectedEl.textContent = data.face_detected ? 'Yes' : 'No';
+                        faceDetectedEl.className = data.face_detected ? 'badge bg-success' : 'badge bg-secondary';
+                        
+                        faceSavedEl.textContent = data.face_saved ? 'Yes' : 'No';
+                        faceSavedEl.className = data.face_saved ? 'badge bg-success' : 'badge bg-secondary';
+                        
+                        // Update student details if available
+                        if (data.student_name) {
+                            studentNameEl.textContent = data.student_name;
+                        }
+                        
+                        if (data.student_id) {
+                            studentIdEl.textContent = data.student_id;
+                        }
+                        
+                        // If face detection is complete, refresh the page after a delay
+                        if (data.face_saved) {
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 3000);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error checking status:', error);
+                    });
+            }
+            
+            // When the modal is hidden, stop the camera
+            const registerModal = document.getElementById('registerStudentModal');
+            registerModal.addEventListener('hidden.bs.modal', function() {
+                if (isCameraActive) {
+                    stopCameraBtn.click();
+                }
+            });
+        });
+    </script>
+
+    <!-- Recently Detected Books -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">Recently Detected Books</h4>
+            <span class="badge bg-primary">Last 24 hours</span>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Cover</th>
                             <th>Title</th>
                             <th>Author</th>
+                            <th>Tag ID</th>
                             <th>Detected At</th>
+                            <th>Status</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for book in recently_detected %}
                         <tr>
+                            <td>
+                                {% if book.cover_image %}
+                                    <img src="{{ book.cover_image.url }}" alt="Book cover" class="img-thumbnail" style="width: 50px; height: 70px; object-fit: cover;">
+                                {% else %}
+                                    <div class="bg-secondary text-white d-flex align-items-center justify-content-center rounded" style="width: 50px; height: 70px;">
+                                        <i class="bi bi-book"></i>
+                                    </div>
+                                {% endif %}
+                            </td>
                             <td>{{ book.title }}</td>
                             <td>{{ book.author }}</td>
-                            <td>{{ book.last_detected|date:"M d, Y" }}</td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="3" class="text-center">No books have been detected yet</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- Recent Borrowing Activities -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h4>Recent Borrowing Activities</h4>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Book</th>
-                            <th>Student</th>
-                            <th>Date</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for activity in recent_activities %}
-                        <tr>
-                            <td>{{ activity.book.title }}</td>
-                            <td>{{ activity.student.name }}</td>
-                            <td>{{ activity.borrowed_date|date:"M d, Y" }}</td>
+                            <td><span class="badge bg-info">{{ book.tag_id }}</span></td>
+                            <td>{{ book.last_detected|date:"M d, Y H:i" }}</td>
                             <td>
-                                {% if activity.is_returned %}
-                                <span class="badge bg-success">Returned</span>
+                                {% if book.is_available %}
+                                    <span class="badge bg-success">Available</span>
                                 {% else %}
-                                <span class="badge bg-warning">Borrowed</span>
+                                    <span class="badge bg-warning">Borrowed</span>
                                 {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-sm btn-danger delete-book" 
+                                            data-book-id="{{ book.id }}" 
+                                            data-bs-toggle="tooltip" 
+                                            title="Delete Book">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="4" class="text-center">No recent activities</td>
+                            <td colspan="7" class="text-center">No books have been detected in the last 24 hours</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -192,7 +504,113 @@
             </div>
         </div>
     </div>
-
+        
+    <!-- Recent Borrowing Activities -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">Recent Borrowing Activities</h5>
+            <span class="badge bg-primary">Last {{ recent_activities|length }} activities</span>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Book</th>
+                            <th>Student</th>
+                            <th>Borrowed Date</th>
+                            <th>Due Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if recent_activities %}
+                            {% for activity in recent_activities %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {% if activity.book.cover_image %}
+                                                <img src="{{ activity.book.cover_image.url }}" alt="Book cover" class="me-2" style="width: 40px; height: 56px; object-fit: cover;">
+                                            {% else %}
+                                                <div class="bg-secondary text-white d-flex align-items-center justify-content-center me-2" style="width: 40px; height: 56px;">
+                                                    <i class="bi bi-book"></i>
+                                                </div>
+                                            {% endif %}
+                                            <div>
+                                                <div class="fw-bold">{{ activity.book.title }}</div>
+                                                <small class="text-muted">{{ activity.book.author }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {% if activity.student.photo %}
+                                                <img src="{{ activity.student.photo.url }}" alt="Student photo" class="rounded-circle me-2" style="width: 32px; height: 32px; object-fit: cover;">
+                                            {% else %}
+                                                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
+                                                    <i class="bi bi-person"></i>
+                                                </div>
+                                            {% endif %}
+                                            <div>
+                                                <div>{{ activity.student.name }}</div>
+                                                <small class="text-muted">{{ activity.student.student_id }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ activity.borrowed_date|date:"M d, Y H:i" }}</td>
+                                    <td>
+                                        {% if activity.due_date %}
+                                            <span class="{% if activity.due_date < now and not activity.is_returned %}text-danger fw-bold{% endif %}">
+                                                {{ activity.due_date|date:"M d, Y" }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if activity.is_returned %}
+                                            <span class="badge bg-success">Returned</span>
+                                        {% else %}
+                                            {% if activity.due_date < now %}
+                                                <span class="badge bg-danger">Overdue</span>
+                                            {% else %}
+                                                <span class="badge bg-primary">Borrowed</span>
+                                            {% endif %}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if not activity.is_returned %}
+                                            <button type="button" class="btn btn-sm btn-success return-book" 
+                                                    data-activity-id="{{ activity.id }}"
+                                                    data-bs-toggle="tooltip" 
+                                                    title="Return Book">
+                                                <i class="bi bi-check-circle"></i> Return
+                                            </button>
+                                        {% else %}
+                                            <span class="text-muted">
+                                                <i class="bi bi-check-circle-fill"></i> Returned on {{ activity.return_date|date:"M d, Y" }}
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4">
+                                    <div class="text-muted">
+                                        <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                                        No recent borrowing activities
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
     <!-- Most Popular Books -->
     <div class="card">
         <div class="card-header">
@@ -203,21 +621,37 @@
                 <table class="table">
                     <thead>
                         <tr>
+                            <th>Cover</th>
                             <th>Title</th>
                             <th>Author</th>
                             <th>Times Borrowed</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for book in most_borrowed %}
                         <tr>
+                            <td>
+                                {% if book.book.cover_image %}
+                                    <img src="{{ book.book.cover_image.url }}" alt="Book cover" style="width: 50px; height: 70px; object-fit: cover;">
+                                {% else %}
+                                    <div class="bg-secondary text-white d-flex align-items-center justify-content-center" style="width: 50px; height: 70px;">
+                                        <i class="bi bi-book"></i>
+                                    </div>
+                                {% endif %}
+                            </td>
                             <td>{{ book.book.title }}</td>
                             <td>{{ book.book.author }}</td>
                             <td>{{ book.borrow_count }}</td>
+                            <td>
+                                <button class="btn btn-danger btn-sm delete-book" data-book-id="{{ book.book.id }}" data-bs-toggle="tooltip" title="Delete">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="3" class="text-center">No borrowing data available yet</td>
+                            <td colspan="5" class="text-center">No borrowing data available yet</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -226,4 +660,249 @@
         </div>
     </div>
 </div>
+
+<!-- Student Detail Modal -->
+<div class="modal fade" id="studentDetailModal" tabindex="-1" aria-labelledby="studentDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="studentDetailModalLabel">Student Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <div id="student-image-container" class="mb-2">
+                        <img id="student-detail-image" src="" alt="Student photo" class="rounded-circle" style="width: 150px; height: 150px; object-fit: cover; border: 3px solid #28a745;">
+                    </div>
+                    <h4 id="student-detail-name"></h4>
+                    <p class="text-muted" id="student-detail-id"></p>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Registration Date:</strong> <span id="student-detail-registered"></span></p>
+                        <p><strong>ID Valid Until:</strong> <span id="student-detail-valid-until"></span></p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Face Verified:</strong> <span id="student-detail-verified"></span></p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteConfirmModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this item? This action cannot be undone.</p>
+                <div id="delete-item-details" class="alert alert-warning"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDelete">
+                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                    Delete
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add click handlers for view student buttons
+        const viewButtons = document.querySelectorAll('.view-student');
+        viewButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const studentId = this.getAttribute('data-student-id');
+                const row = this.closest('tr');
+                
+                // Get data from the row
+                const studentImage = row.querySelector('img')?.src || '';
+                const studentName = row.cells[1].textContent.trim();
+                const studentID = row.cells[2].textContent.trim();
+                const registeredDate = row.cells[3].textContent.trim();
+                
+                // Get verification status
+                const verificationBadge = row.cells[4].querySelector('.badge');
+                const verificationStatus = verificationBadge ? verificationBadge.textContent.trim() : 'Unknown';
+                
+                // Set modal content
+                document.getElementById('student-detail-name').textContent = studentName;
+                document.getElementById('student-detail-id').textContent = studentID;
+                document.getElementById('student-detail-registered').textContent = registeredDate;
+                document.getElementById('student-detail-verified').textContent = verificationStatus;
+                
+                // Set the image if available
+                const imageElement = document.getElementById('student-detail-image');
+                if (studentImage) {
+                    imageElement.src = studentImage;
+                    document.getElementById('student-image-container').style.display = 'block';
+                } else {
+                    document.getElementById('student-image-container').style.display = 'none';
+                }
+                
+                // Show modal
+                const modal = new bootstrap.Modal(document.getElementById('studentDetailModal'));
+                modal.show();
+            });
+        });
+
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+
+        // Delete functionality for books
+        const deleteBookButtons = document.querySelectorAll('.delete-book');
+        deleteBookButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const bookId = this.getAttribute('data-book-id');
+                const bookTitle = this.closest('tr').querySelector('td:nth-child(2)').textContent;
+                showDeleteConfirmation('book', bookId, bookTitle);
+            });
+        });
+
+        // Delete functionality for activities
+        const deleteActivityButtons = document.querySelectorAll('.delete-activity');
+        deleteActivityButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const activityId = this.getAttribute('data-activity-id');
+                const bookTitle = this.closest('tr').querySelector('td:nth-child(1)').textContent;
+                const studentName = this.closest('tr').querySelector('td:nth-child(2)').textContent;
+                showDeleteConfirmation('activity', activityId, `${bookTitle} borrowed by ${studentName}`);
+            });
+        });
+
+        // Delete functionality for students
+        const deleteStudentButtons = document.querySelectorAll('.delete-student');
+        deleteStudentButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const studentId = this.getAttribute('data-student-id');
+                const studentName = this.closest('tr').querySelector('td:nth-child(2)').textContent;
+                showDeleteConfirmation('student', studentId, studentName);
+            });
+        });
+
+        // Delete confirmation modal handling
+        let currentDeleteType = '';
+        let currentDeleteId = '';
+
+        function showDeleteConfirmation(type, id, itemDetails) {
+            currentDeleteType = type;
+            currentDeleteId = id;
+            
+            // Update modal content with item details
+            document.getElementById('delete-item-details').innerHTML = `
+                <strong>${type === 'book' ? 'Book' : type === 'student' ? 'Student' : 'Activity'}:</strong> ${itemDetails}
+            `;
+            
+            const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+            modal.show();
+        }
+
+        document.getElementById('confirmDelete').addEventListener('click', function() {
+            // Show loading state
+            const button = this;
+            const spinner = button.querySelector('.spinner-border');
+            button.disabled = true;
+            spinner.classList.remove('d-none');
+            
+            let endpoint;
+            switch(currentDeleteType) {
+                case 'book':
+                    endpoint = `/delete-book/${currentDeleteId}/`;
+                    break;
+                case 'student':
+                    endpoint = `/delete-student/${currentDeleteId}/`;
+                    break;
+                case 'activity':
+                    endpoint = `/delete-activity/${currentDeleteId}/`;
+                    break;
+                default:
+                    console.error('Unknown delete type');
+                    return;
+            }
+
+            fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show success message
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = 'alert alert-success alert-dismissible fade show';
+                    alertDiv.innerHTML = `
+                        <strong>Success!</strong> ${currentDeleteType === 'student' ? 'Student' : 'Item'} has been deleted.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    `;
+                    document.querySelector('.container').insertBefore(alertDiv, document.querySelector('.container').firstChild);
+                    
+                    // Remove the deleted row from the table
+                    const deletedElement = document.querySelector(`[data-${currentDeleteType}-id="${currentDeleteId}"]`);
+                    if (deletedElement) {
+                        const row = deletedElement.closest('tr');
+                        row.style.backgroundColor = '#ffe6e6';
+                        row.style.transition = 'background-color 0.5s';
+                        setTimeout(() => {
+                            row.style.opacity = '0';
+                            row.style.transition = 'opacity 0.5s';
+                            setTimeout(() => row.remove(), 500);
+                        }, 500);
+                    }
+                    
+                    // Close the modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal'));
+                    modal.hide();
+                    
+                    // Reload the page after a short delay
+                    setTimeout(() => {
+                        location.reload();
+                    }, 2000);
+                } else {
+                    alert('Error deleting item: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error deleting item');
+            })
+            .finally(() => {
+                button.disabled = false;
+                spinner.classList.add('d-none');
+            });
+        });
+
+        // Helper function to get CSRF token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    });
+</script>
 {% endblock %}

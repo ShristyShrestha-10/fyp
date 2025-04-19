@@ -1,0 +1,6 @@
+User:
+
+
+
+Extract the name from this ID card. If you see a person's name, return only that name.
+Assistant: Kate.

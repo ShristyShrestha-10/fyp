@@ -1,2 +1,3 @@
 0,The Alchemist,Paolo Coehlo,Fiction,ISBN: 123545432543523
 1,The Idiot,John Smith,Technology,ISBN: 9780123456789
+2, The Idiot,John Smith,Technology,ISBN: 9780123456789

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Book, Student, BorrowedBook
+from .models import Book, Student, BorrowedBook, StudentLogin
 
 @admin.register(Book)
 class BookAdmin(admin.ModelAdmin):
@@ -31,3 +31,10 @@ class BorrowedBookAdmin(admin.ModelAdmin):
     list_display = ('book', 'student', 'borrowed_date', 'due_date', 'is_returned')
     search_fields = ('book__title', 'student__name', 'student__student_id')
     list_filter = ('is_returned', 'borrowed_date')
+
+@admin.register(StudentLogin)
+class StudentLoginAdmin(admin.ModelAdmin):
+    list_display = ('student', 'login_time', 'status', 'similarity_score', 'is_active')
+    search_fields = ('student__name', 'student__student_id')
+    list_filter = ('status', 'is_active', 'login_time')
+    readonly_fields = ('login_time', 'similarity_score')

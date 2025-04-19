@@ -79,6 +79,29 @@
             border-radius: 5px;
             font-size: 14px;
         }
+
+        .student-info {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: white;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 5px;
+            text-align: right;
+            max-width: 40%;
+        }
+
+        .phase-indicator {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            color: white;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -106,12 +129,14 @@
 
     <div class="login-container">
         <h1>Student Login</h1>
-        <p>Please position yourself in front of the camera</p>
+        <p>Please position yourself in front of the camera for verification</p>
         
         <div class="video-container">
             <img id="video-feed" alt="Camera Feed">
             <div id="status-message" class="status-message"></div>
             <div id="error-message" class="error-message"></div>
+            <div id="student-info" class="student-info"></div>
+            <div id="phase-indicator" class="phase-indicator"></div>
         </div>
 
         <div class="button-container">
@@ -121,60 +146,12 @@
     </div>
 
     <script>
-        let isCameraActive = false;
-        const startBtn = document.getElementById('start-btn');
-        const endBtn = document.getElementById('end-btn');
-        const videoFeed = document.getElementById('video-feed');
-        const statusMessage = document.getElementById('status-message');
-        const errorMessage = document.getElementById('error-message');
-
-        function startCamera() {
-            if (isCameraActive) return;
-            
-            // Show video feed
-            videoFeed.src = "{% url 'video_feed' camera_type='student_login' %}";
-            
-            // Set up event listeners
-            videoFeed.onload = function() {
-                isCameraActive = true;
-                startBtn.disabled = true;
-                endBtn.disabled = false;
-            };
-            
-            videoFeed.onerror = function() {
-                stopCamera();
-                window.location.href = "{% url 'home' %}";
-            };
-        }
-
-        function stopCamera() {
-            if (!isCameraActive) return;
-
-            // Stop the video feed
-            videoFeed.src = '';
-            isCameraActive = false;
-            startBtn.disabled = false;
-            endBtn.disabled = true;
-            statusMessage.textContent = '';
-            errorMessage.textContent = '';
-
-            // Redirect to home page
-            window.location.href = "{% url 'home' %}";
-        }
-
-        // Add event listeners for buttons
-        startBtn.addEventListener('click', startCamera);
-        endBtn.addEventListener('click', stopCamera);
-
-        // Initialize button states
-        endBtn.disabled = true;
-
-        // Clean up on page unload
-        window.addEventListener('beforeunload', function() {
-            if (isCameraActive) {
-                stopCamera();
-            }
-        });
+        // URL constants for API endpoints
+        const LOGIN_URL = "{% url 'student_login' %}";
+        const FACE_DETECTION_STATUS_URL = "{% url 'get_face_detection_status' %}";
+        const VIDEO_FEED_URL = "{% url 'video_feed' camera_type='student_login' %}";
+        const CSRF_TOKEN = "{{ csrf_token }}";
     </script>
+    <script src="{% static 'library/js/student_login.js' %}"></script>
 </body>
 </html> 
