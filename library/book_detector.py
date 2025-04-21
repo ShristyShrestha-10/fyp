@@ -24,6 +24,15 @@ class BookDetector:
                 logger.error("AprilTag detector not initialized")
                 return []
 
+            # Handle case where frame is a bytes object (from JPEG compression)
+            if isinstance(frame, bytes):
+                # Convert bytes to numpy array
+                np_arr = np.frombuffer(frame, np.uint8)
+                frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+                if frame is None:
+                    logger.error("Failed to decode frame from bytes")
+                    return []
+
             # Convert frame to grayscale for AprilTag detection
             if len(frame.shape) == 3:
                 gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -39,7 +48,8 @@ class BookDetector:
                 # Process each detection
                 results = []
                 for detection in detections:
-                    tag_id = detection.tag_id
+                    # Ensure tag_id is an integer
+                    tag_id = int(detection.tag_id)
                     corners = detection.corners
                     center = detection.center
                     

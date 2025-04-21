@@ -27,6 +27,10 @@ from django.views.decorators.http import require_http_methods
 from .recommendation_service import BookRecommender
 from django.views.decorators.csrf import csrf_exempt
 import torch
+import json
+from django.db.utils import IntegrityError
+from django.urls import reverse
+from django.http import HttpRequest
 
 # Initialize logger
 logger = logging.getLogger(__name__)
@@ -34,6 +38,9 @@ logger = logging.getLogger(__name__)
 def store_detected_book(tag_id, book_info):
     """Store or update a book in the database based on detected AprilTag."""
     try:
+        # Ensure tag_id is an integer
+        tag_id = int(tag_id)
+        
         # Extract clean ISBN if it has 'ISBN:' prefix
         isbn = book_info.get('isbn', '')
         if isbn and isbn.startswith('ISBN:'):
@@ -157,27 +164,50 @@ def camera_feed(request):
         # Get the type of scanner from query parameters
         scanner_type = request.GET.get('type', 'id_card')
         
+        # Check if this is a refresh and user is already logged in
+        is_student_login = scanner_type == 'student_login'
+        student_session_exists = 'student_id' in request.session
+        
+        # If this is a student login camera and user is already logged in,
+        # redirect them to the main page instead
+        if is_student_login and student_session_exists:
+            logger.info(f"User with session {request.session.get('student_id')} already logged in, redirecting to main page")
+            return redirect('main_page')
+            
         # Initialize camera using factory
         camera = CameraFactory.create_camera(scanner_type)
         if camera is None or not camera.is_running:
             return render(request, 'library/camera_feed.html', {
                 'error': 'Camera initialization failed. Please check your camera connection.',
                 'show_retry': True,
-                'scanner_type': scanner_type  # Add scanner_type to context
+                'scanner_type': scanner_type,  # Add scanner_type to context
+                'is_registration': request.GET.get('is_registration') == 'true'
             })
         
-        # If this is a borrow camera and we have a student session, set it
-        if scanner_type == 'borrow' and hasattr(camera, 'set_student_session'):
+        # If this is a borrow/return camera and we have a student session, set it
+        if scanner_type in ['borrow', 'return'] and hasattr(camera, 'set_student_session'):
             student_id = request.session.get('student_id')
             if student_id:
                 camera.set_student_session(student_id)
-                logger.info(f"Set student session {student_id} for borrow camera")
+                logger.info(f"Set student session {student_id} for {scanner_type} camera")
             else:
-                logger.warning("No student session found for borrow camera")
+                logger.warning(f"No student session found for {scanner_type} camera, redirecting to auth page")
+                # Stop the camera since we won't be using it
+                camera.stop()
+                CameraFactory.remove_camera(scanner_type)
+                return redirect('auth_page')
+            
+        # Include session info in template context to maintain state
+        student_name = request.session.get('student_name', '')
+        student_id = request.session.get('student_id', '')
             
         return render(request, 'library/camera_feed.html', {
             'camera_ready': True,
-            'scanner_type': scanner_type
+            'scanner_type': scanner_type,
+            'is_registration': request.GET.get('is_registration') == 'true',
+            'page_title': request.GET.get('page_title', 'Camera Feed'),
+            'student_name': student_name,
+            'student_id': student_id
         })
         
     except Exception as e:
@@ -185,7 +215,8 @@ def camera_feed(request):
         return render(request, 'library/camera_feed.html', {
             'error': f'An error occurred while initializing the camera: {str(e)}',
             'show_retry': True,
-            'scanner_type': request.GET.get('type', 'id_card')  # Add scanner_type to context
+            'scanner_type': request.GET.get('type', 'id_card'),  # Add scanner_type to context
+            'is_registration': request.GET.get('is_registration') == 'true'
         })
 
 @csrf_exempt
@@ -235,17 +266,13 @@ def stop_scanner(request):
                 logger.info(f"Successfully stopped camera of type {camera_type}")
                 return JsonResponse({
                     'status': 'success',
-                    'message': 'Scanner stopped successfully',
-                    'refresh_session': True,
-                    'stay_on_page': True
+                    'message': 'Scanner stopped successfully'
                 })
             else:
                 logger.warning(f"No active camera of type {camera_type} found")
                 return JsonResponse({
                     'status': 'success',
-                    'message': 'No active scanner to stop',
-                    'refresh_session': True,
-                    'stay_on_page': True
+                    'message': 'No active scanner to stop'
                 })
                 
         except Exception as e:
@@ -320,16 +347,10 @@ def capture_frame(request, camera_type='id_card'):
         if frame is None:
             # Check if this is due to a duplicate student
             if hasattr(camera, 'is_duplicate') and camera.is_duplicate:
-                # Stop and reset camera for next registration
-                camera.stop()
-                CameraFactory.remove_camera(camera_type)
-                if torch.cuda.is_available():
-                    torch.cuda.empty_cache()
                 return JsonResponse({
                     'status': 'warning',
                     'message': f'Student {camera.student_created.name} (ID: {camera.student_created.student_id}) is already registered.',
                     'stop_camera': True,
-                    'refresh_session': True,
                     'student_details': {
                         'name': camera.student_created.name,
                         'student_id': camera.student_created.student_id,
@@ -350,16 +371,10 @@ def capture_frame(request, camera_type='id_card'):
                 if ocr_results:
                     # Check if this is a duplicate registration
                     if hasattr(camera, 'is_duplicate') and camera.is_duplicate:
-                        # Stop and reset camera for next registration
-                        camera.stop()
-                        CameraFactory.remove_camera(camera_type)
-                        if torch.cuda.is_available():
-                            torch.cuda.empty_cache()
                         return JsonResponse({
                             'status': 'warning',
                             'message': f'Student {camera.student_created.name} (ID: {camera.student_created.student_id}) is already registered.',
                             'stop_camera': True,
-                            'refresh_session': True,
                             'student_details': {
                                 'name': camera.student_created.name,
                                 'student_id': camera.student_created.student_id,
@@ -374,19 +389,12 @@ def capture_frame(request, camera_type='id_card'):
                     else:
                         face_image = None
                         
-                    # Stop and reset camera for next registration after successful processing
-                    camera.stop()
-                    CameraFactory.remove_camera(camera_type)
-                    if torch.cuda.is_available():
-                        torch.cuda.empty_cache()
-                        
                     return JsonResponse({
                         'status': 'success',
                         'text': ocr_results,
                         'text_file': text_file,
                         'image_path': full_path,
                         'face_image': face_image,
-                        'refresh_session': True,
                         'student_details': {
                             'name': camera.student_created.name if camera.student_created else 'Unknown',
                             'student_id': camera.student_created.student_id if camera.student_created else 'Unknown',
@@ -472,271 +480,176 @@ def process_id_card(request):
             # Additional processing logic
     return render(request, 'library/id_card_processing.html')
 
-def main_page(request):
-    """View for the main page with borrow and return buttons"""
-    return render(request, 'library/main_page.html')
-
-def recommendations(request):
-    try:
-        # Initialize the recommender
-        recommender = BookRecommender()
+def auth_page(request):
+    """Landing page with options for login or registration"""
+    # Clear any existing student session
+    if 'student_id' in request.session:
+        return redirect('main_page')
         
-        # Get all books from the dataset for the dropdown
-        all_books = recommender.df['Book-Title'].unique().tolist() if recommender.df is not None else []
-        
-        # Get the selected book from the query parameters
-        selected_book = request.GET.get('book_title')
-        recommended_books = []
-        
-        if selected_book:
-            # Get recommendations
-            recommendations = recommender.get_recommendations(selected_book, top_n=4)
-            
-            # Format recommendations for the template
-            for book in recommendations:
-                recommended_books.append({
-                    'title': book['title'],
-                    'author': book['author'],
-                    'cover_image': book['image_url'],
-                    'genre': 'Not specified',  # Dataset doesn't include genre
-                    'rating': 4  # Default rating since dataset doesn't include ratings
-                })
-        
-        return render(request, 'library/recommendations.html', {
-            'books': all_books,
-            'recommended_books': recommended_books,
-            'selected_book': selected_book
-        })
-        
-    except Exception as e:
-        logger.error(f"Error in recommendations view: {str(e)}")
-        messages.error(request, "An error occurred while getting book recommendations.")
-        return render(request, 'library/recommendations.html', {
-            'books': [],
-            'recommended_books': [],
-            'error': str(e)
-        })
-
-def about(request):
-    """View for the about page"""
-    return render(request, 'library/about.html')
-
-def admin_login(request):
-    if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-        user = authenticate(request, username=username, password=password)
-        
-        if user is not None and user.is_staff:
-            login(request, user)
-            return redirect('admin_dashboard')
-        else:
-            return render(request, 'library/admin_login.html', {
-                'error': 'Invalid username or password'
-            })
+    # Clear specified session variables
+    for key in ['student_id', 'student_name', 'is_student']:
+        if key in request.session:
+            del request.session[key]
     
-    return render(request, 'library/admin_login.html')
+    return render(request, 'library/auth_page.html')
 
-def admin_logout(request):
-    logout(request)
-    return redirect('home')
-
-@login_required
-def admin_dashboard(request):
-    """Admin dashboard view - focused on recent registrations with face images"""
-    try:
-        # Get basic statistics
-        total_books = Book.objects.count()
-        total_students = Student.objects.count()
-        books_borrowed = BorrowedBook.objects.filter(is_returned=False).count()
-        overdue_books = BorrowedBook.objects.filter(
-            is_returned=False,
-            due_date__lt=timezone.now()
-        ).count()
+def register_student(request):
+    """Register a new student with ID card and face"""
+    # If already logged in, redirect to main page
+    if 'student_id' in request.session:
+        return redirect('main_page')
         
-        # Get all recent registrations (priority to those with face images)
-        face_verified_students = Student.objects.filter(
-            face_verified=True
-        ).order_by('-registered_at')[:10]
-        
-        # Get recent registrations (regardless of verification)
-        recent_registrations = Student.objects.all().order_by('-registered_at')[:15]
-        
-        # Get currently logged-in students
-        current_logins = StudentLogin.objects.filter(
-            is_active=True,
-            logout_time__isnull=True
-        ).order_by('-login_time')[:20]
-
-        # Get recently detected books (last 24 hours)
-        recently_detected = Book.objects.filter(
-            last_detected__gte=timezone.now() - timezone.timedelta(hours=24)
-        ).order_by('-last_detected')[:10]
-
-        # Get recent borrowing activities - updated to show latest first and include all necessary fields
-        recent_activities = BorrowedBook.objects.select_related(
-            'book', 'student'
-        ).order_by(
-            '-borrowed_date'
-        )[:10]
-        
-        # Log the activities for debugging
-        logger.info(f"Found {recent_activities.count()} recent activities")
-        for activity in recent_activities:
-            logger.info(
-                f"Activity: Book '{activity.book.title}' borrowed by {activity.student.name} "
-                f"on {activity.borrowed_date.strftime('%Y-%m-%d %H:%M:%S')}"
-            )
-
-        # Get most borrowed books - updated to include more details
-        most_borrowed = BorrowedBook.objects.values(
-            'book__id',
-            'book__title', 
-            'book__author', 
-            'book__cover_image'
-        ).annotate(
-            borrow_count=Count('book__id')
-        ).order_by('-borrow_count')[:10]
-        
-        # Format most borrowed books data
-        most_borrowed_formatted = []
-        for item in most_borrowed:
-            most_borrowed_formatted.append({
-                'book': {
-                    'id': item['book__id'],
-                    'title': item['book__title'],
-                    'author': item['book__author'],
-                    'cover_image': item['book__cover_image']
-                },
-                'borrow_count': item['borrow_count']
-            })
-        
-        context = {
-            'total_books': total_books,
-            'total_students': total_students,
-            'books_borrowed': books_borrowed,
-            'overdue_books': overdue_books,
-            'verified_students': face_verified_students,
-            'recent_registrations': recent_registrations,
-            'current_logins': current_logins,
-            'now': timezone.now(),
-            'recently_detected': recently_detected,
-            'recent_activities': recent_activities,
-            'most_borrowed': most_borrowed_formatted
-        }
-        
-        # Add meta refresh header to auto-refresh the dashboard
-        response = render(request, 'library/admin_dashboard.html', context)
-        response['Refresh'] = '10'  # Refresh every 10 seconds
-        return response
-        
-    except Exception as e:
-        logger.error(f"Error in admin dashboard: {str(e)}")
-        messages.error(request, "An error occurred while loading the dashboard")
-        return redirect('home')
+    return render(request, 'library/camera_feed.html', {
+        'camera_ready': False,
+        'scanner_type': 'id_card',
+        'is_registration': True,
+        'page_title': 'Student Registration'
+    })
 
 def student_login(request):
-    """View for student login with face verification"""
+    """Student login with ID card and face verification"""
+    # If already logged in, redirect to main page
+    if 'student_id' in request.session:
+        return redirect('main_page')
+    
     if request.method == 'POST':
-        # Get student ID from the form data
-        student_id = request.POST.get('student_id')
-        
-        if not student_id:
-            messages.error(request, "Student ID is required")
-            return render(request, 'library/student_login.html', {
-                'camera_type': 'student_login',
-                'error': 'Student ID is required'
-            })
-            
         try:
-            # Find the student by ID
-            student = Student.objects.get(student_id=student_id)
+            # Extract data from the POST request
+            data = request.POST
+            student_id = data.get('student_id')
+            is_verified = data.get('is_verified') == 'true'
+            similarity_score = float(data.get('similarity_score', 0))
             
-            # Check if the student's face has been verified
-            if not student.face_verified:
-                messages.error(request, "Your face has not been verified yet. Please visit the library desk.")
-                return render(request, 'library/student_login.html', {
-                    'camera_type': 'student_login',
-                    'error': 'Face not verified'
+            if not student_id:
+                logger.error("Student ID not provided in login attempt")
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Student ID not provided'
                 })
-                
-            # Create a session for the student
-            request.session['student_id'] = student.student_id
-            request.session['student_name'] = student.name
-            request.session['is_student'] = True
             
-            # Record login activity
+            # Get the student from the database
             try:
-                # Create a default login record (without similarity score, which is added during face verification)
+                student = Student.objects.get(student_id=student_id)
+            except Student.DoesNotExist:
+                logger.error(f"Student with ID {student_id} not found during login")
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Student not found'
+                })
+            
+            # If the face is verified, set session data and return success
+            if is_verified:
+                # Set session variables
+                request.session['student_id'] = student.student_id
+                request.session['student_name'] = student.name
+                request.session['is_student'] = True
+                request.session['last_activity'] = timezone.now().timestamp()
+                request.session['login_time'] = timezone.now().timestamp()
+                
+                # Generate a new session key for security (prevent session fixation)
+                request.session.cycle_key()
+                
+                # Set a longer session timeout (1 day by default)
+                request.session.set_expiry(86400)
+                
+                # Create a login record
+                login_record = StudentLogin.objects.create(
+                    student=student,
+                    login_time=timezone.now(),
+                    status="Verified",
+                    similarity_score=similarity_score,
+                    is_active=True
+                )
+                
+                logger.info(f"Student {student.name} (ID: {student.student_id}) logged in successfully")
+                
+                return JsonResponse({
+                    'status': 'success',
+                    'message': 'Login successful',
+                    'student_name': student.name,
+                    'redirect_url': reverse('main_page')  # Redirect to main page after login
+                })
+            else:
+                # Create a failed login record to track verification failures
                 StudentLogin.objects.create(
                     student=student,
                     login_time=timezone.now(),
-                    status="Manual Login",  # This indicates a manual login without face verification
-                    similarity_score=0.0,   # Default to 0 for manual logins
-                    is_active=True
+                    status="Not Verified",
+                    similarity_score=similarity_score,
+                    is_active=False
                 )
-                logger.info(f"Student manually logged in: {student.name} (ID: {student.student_id})")
-            except Exception as activity_error:
-                logger.error(f"Error recording login activity: {str(activity_error)}")
-            
-            messages.success(request, f"Welcome, {student.name}!")
-            return redirect('home')  # Redirect to home page after successful login
-            
-        except Student.DoesNotExist:
-            messages.error(request, "Student not found. Please check your ID.")
-            return render(request, 'library/student_login.html', {
-                'camera_type': 'student_login',
-                'error': 'Student not found'
-            })
+                
+                logger.warning(f"Face verification failed for student {student.name} (ID: {student.student_id}) with similarity score: {similarity_score}")
+                return JsonResponse({
+                    'status': 'error',
+                    'message': f'Face verification failed. Similarity score: {similarity_score:.2f} (required: >= 0.5)',
+                    'similarity_score': similarity_score
+                })
+                
         except Exception as e:
             ErrorHandler.handle_error(e, "Student login")
-            messages.error(request, "An error occurred during login. Please try again.")
-            return render(request, 'library/student_login.html', {
-                'camera_type': 'student_login',
-                'error': 'Login error'
+            return JsonResponse({
+                'status': 'error',
+                'message': f'An unexpected error occurred: {str(e)}'
             })
     
-    # GET request - show login page with camera feed        
-    return render(request, 'library/student_login.html', {
-        'camera_type': 'student_login'
+    # If not a POST request, render the login template
+    return render(request, 'library/camera_feed.html', {
+        'camera_ready': False,
+        'scanner_type': 'student_login',
+        'is_registration': False,
+        'page_title': 'Student Login'
     })
 
 def student_logout(request):
-    """Handle student logout and update the StudentLogin record"""
+    """Log out student and clear session data"""
     try:
-        if 'student_id' in request.session:
-            student_id = request.session.get('student_id')
-            # Get the student
+        # Stop any active cameras associated with this session
+        camera_type = request.POST.get('camera_type', 'student_login')
+        active_camera = CameraFactory.get_active_camera(camera_type)
+        if active_camera:
+            active_camera.stop()
+            CameraFactory.remove_camera(camera_type)
+            logger.info(f"Stopped camera for student logout: {camera_type}")
+            
+        # Clear torch CUDA memory if available
+        try:
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+                logger.info("Cleared GPU memory during student logout")
+        except Exception as e:
+            logger.warning(f"Error clearing GPU memory: {str(e)}")
+            
+        # Update login record to mark as inactive
+        student_id = request.session.get('student_id')
+        if student_id:
             try:
+                # Get the student object
                 student = Student.objects.get(student_id=student_id)
                 
-                # Update any active login records
+                # Mark all active logins as inactive
                 active_logins = StudentLogin.objects.filter(
                     student=student,
-                    is_active=True,
-                    logout_time__isnull=True
+                    is_active=True
                 )
                 
                 for login in active_logins:
-                    login.logout_time = timezone.now()
                     login.is_active = False
+                    login.logout_time = timezone.now()
                     login.save()
-                    
-                logger.info(f"Student logged out: {student.name} (ID: {student.student_id})")
+                    logger.info(f"Marked login record {login.id} as inactive for student {student_id}")
             except Exception as e:
-                logger.error(f"Error updating login record on logout: {str(e)}")
-            
-            # Clear session
-            request.session.pop('student_id', None)
-            request.session.pop('student_name', None)
-            request.session.pop('is_student', None)
-            messages.success(request, "You have been logged out successfully.")
-            
-        return redirect('home')
+                logger.error(f"Error updating login records during logout: {str(e)}")
+                
+        # Clear the session
+        request.session.flush()
+        logger.info("Student logged out and session cleared")
+        
+        # Redirect to auth page
+        return redirect('auth_page')
     except Exception as e:
         ErrorHandler.handle_error(e, "Student logout")
-        messages.error(request, "An error occurred during logout.")
-        return redirect('home')
+        return redirect('auth_page')  # Redirect even if there's an error
 
 def get_face_detection_status(request):
     """Get the status of face detection for student login"""
@@ -750,66 +663,80 @@ def get_face_detection_status(request):
                 'status': 'No active camera session',
                 'face_detected': False,
                 'face_saved': False,
+                'capture_complete': False,
                 'id_card_captured': False,
-                'error': None
+                'error_message': None
             })
         
-        # Return the status
+        # Return the status - using getattr with default values for safety
         response = {
             'status': 'Capturing...',
-            'face_detected': camera.face_detected,
-            'face_saved': camera.face_saved,
-            'error': camera.error_message,
+            'face_detected': getattr(camera, 'face_detected', False),
+            'face_saved': getattr(camera, 'face_saved', False),
+            'capture_complete': getattr(camera, 'capture_complete', False),
+            'error_message': getattr(camera, 'error_message', None),
+            'phase': getattr(camera, 'phase', 'detection'),
         }
         
-        # For student login, also check ID card status
-        if camera_type == 'student_login':
-            response['id_card_captured'] = getattr(camera, 'id_card_captured', False)
+        # Add student details if available - create a simplified structure
+        student_details = None
         
-        # Add student info if available from ID card scanning during registration
+        # For ID card registration
         if hasattr(camera, 'student_created') and camera.student_created:
-            response['student_name'] = camera.student_created.name
-            response['student_id'] = camera.student_created.student_id
+            student_details = {
+                'name': camera.student_created.name,
+                'student_id': camera.student_created.student_id
+            }
+            response['student_details'] = student_details
         
-        # Add student info if available from face matching (for login)
+        # For student login
         if hasattr(camera, 'matched_student') and camera.matched_student:
-            response['student_name'] = camera.matched_student.name
-            response['student_id'] = camera.matched_student.student_id
-            response['is_verified'] = camera.matched_student.face_verified
+            student_details = {
+                'name': camera.matched_student.name,
+                'student_id': camera.matched_student.student_id
+            }
+            response['student_details'] = student_details
+            
+            # Only set is_verified to true if the similarity score meets the threshold
+            has_sufficient_score = (hasattr(camera, 'best_similarity_score') and 
+                                   camera.best_similarity_score >= 0.5)
+            response['is_verified'] = has_sufficient_score
             
             # Add similarity score if available (calculated during face matching)
             if hasattr(camera, 'best_similarity_score'):
                 response['similarity_score'] = round(camera.best_similarity_score, 2)
-            
-            # If login is complete (matched and verified), add auto-login info
-            if camera.capture_complete and camera.matched_student.face_verified:
-                # Set login_success based on similarity score
-                if hasattr(camera, 'best_similarity_score') and camera.best_similarity_score >= 0.5:
-                    response['login_success'] = True
-                    response['status'] = 'Login successful! Face verified.'
-                else:
-                    response['login_success'] = False
-                    response['status'] = 'Login failed! Face not verified.'
-                
-                # Create a login session through AJAX only if verification passes
-                if not hasattr(camera, 'best_similarity_score') or camera.best_similarity_score >= 0.5:
-                    request.session['student_id'] = camera.matched_student.student_id
-                    request.session['student_name'] = camera.matched_student.name
-                    request.session['is_student'] = True
-                    
-                    # Log the successful login
-                    logger.info(f"Student auto-logged in via face recognition: {camera.matched_student.name}")
-            
-        return JsonResponse(response)
         
+        # Add specific status for borrow/return camera
+        if camera_type in ['borrow', 'return'] and hasattr(camera, 'detected_books'):
+            response['detected_books'] = len(camera.detected_books)
+            if hasattr(camera, 'student_session') and camera.student_session:
+                response['student_session'] = camera.student_session
+                # Look up student details if we have a session but no details yet
+                if not student_details and camera.student_session:
+                    try:
+                        student = Student.objects.filter(student_id=camera.student_session).first()
+                        if student:
+                            student_details = {
+                                'name': student.name, 
+                                'student_id': student.student_id
+                            }
+                            response['student_details'] = student_details
+                    except Exception as e:
+                        logger.error(f"Error looking up student details: {str(e)}")
+            
+        # For student login, also check ID card status
+        if camera_type == 'student_login':
+            response['id_card_captured'] = getattr(camera, 'id_card_captured', False)
+            response['ready_for_face_recognition'] = getattr(camera, 'ready_for_face_recognition', False)
+        
+        return JsonResponse(response)
     except Exception as e:
         ErrorHandler.handle_error(e, "Getting face detection status")
         return JsonResponse({
             'status': 'Error',
-            'error': str(e),
             'face_detected': False,
             'face_saved': False,
-            'id_card_captured': False
+            'error_message': str(e)
         })
 
 def get_student_details(request):
@@ -917,57 +844,76 @@ def delete_student(request, student_id):
 
 @csrf_exempt
 def borrow_detected_book(request):
+    """Endpoint for borrowing a detected book"""
     if request.method != 'POST':
         return JsonResponse({'status': 'error', 'message': 'Only POST method is allowed'}, status=405)
     
+    # Custom CSRF validation for exempt view
+    csrf_token = request.META.get('HTTP_X_CSRFTOKEN', '')
+    if not csrf_token and not request.session.get('is_student'):
+        return JsonResponse({'status': 'error', 'message': 'CSRF validation failed'}, status=403)
+
     try:
-        # First check if there's a logged in student
+        # Get tag ID from request
+        try:
+            data = json.loads(request.body)
+            tag_id = data.get('tag_id')
+        except json.JSONDecodeError:
+            tag_id = request.POST.get('tag_id')
+            
+        # Validate tag_id
+        if not tag_id:
+            return JsonResponse({'status': 'error', 'message': 'No tag ID provided'}, status=400)
+            
+        # Ensure tag_id is an integer
+        try:
+            tag_id = int(tag_id)
+        except ValueError:
+            return JsonResponse({'status': 'error', 'message': 'Invalid tag ID format'}, status=400)
+            
+        # Get student ID from session
         student_id = request.session.get('student_id')
         if not student_id:
-            return JsonResponse({
-                'status': 'error',
-                'message': 'No student is logged in. Please log in first.'
-            }, status=401)
-
-        # Get the student from the session
+            return JsonResponse({'status': 'error', 'message': 'No student session found'}, status=401)
+            
+        # Get the student and book objects
         try:
             student = Student.objects.get(student_id=student_id)
-        except Student.DoesNotExist:
-            return JsonResponse({
-                'status': 'error',
-                'message': 'Student session is invalid. Please log in again.'
-            }, status=401)
-
-        # Get the tag_id from the request
-        tag_id = request.POST.get('tag_id')
-        if not tag_id:
-            return JsonResponse({'status': 'error', 'message': 'No tag_id provided'}, status=400)
-        
-        # Get the book by tag_id
-        try:
             book = Book.objects.get(tag_id=tag_id)
+        except Student.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Student not found'}, status=404)
         except Book.DoesNotExist:
-            return JsonResponse({'status': 'error', 'message': f'No book found with tag_id {tag_id}'}, status=404)
-        
-        # Check if book is available
-        if not book.available:
-            return JsonResponse({'status': 'error', 'message': 'Book is already borrowed'}, status=400)
-        
-        # Check if student has any overdue books
-        overdue_books = BorrowedBook.objects.filter(
+            return JsonResponse({'status': 'error', 'message': 'Book not found'}, status=404)
+            
+        # Check if book is already borrowed by this student
+        already_borrowed = BorrowedBook.objects.filter(
+            book=book,
             student=student,
-            is_returned=False,
-            due_date__lt=timezone.now()
-        )
-        if overdue_books.exists():
+            is_returned=False
+        ).exists()
+        
+        if already_borrowed:
             return JsonResponse({
                 'status': 'error',
-                'message': 'Cannot borrow book. You have overdue books to return.'
-            }, status=400)
+                'message': f'You have already borrowed "{book.title}"'
+            })
+            
+        # Check if book is available (not borrowed by someone else)
+        is_available = not BorrowedBook.objects.filter(
+            book=book,
+            is_returned=False
+        ).exists()
         
-        # Create new borrowed book record
-        due_date = timezone.now() + timedelta(days=14)  # 2 weeks borrowing period
-        borrowed_book = BorrowedBook.objects.create(
+        if not is_available:
+            return JsonResponse({
+                'status': 'error',
+                'message': f'"{book.title}" is currently borrowed by another student'
+            })
+            
+        # Create new borrowing record
+        due_date = timezone.now() + timezone.timedelta(days=14)  # 2 weeks loan period
+        
+        borrow_record = BorrowedBook.objects.create(
             book=book,
             student=student,
             borrowed_date=timezone.now(),
@@ -975,182 +921,407 @@ def borrow_detected_book(request):
             is_returned=False
         )
         
-        # Update book availability
-        book.available = False
+        # Update book status
+        book.is_available = False
+        book.last_borrowed = timezone.now()
+        book.borrow_count = book.borrow_count + 1 if hasattr(book, 'borrow_count') else 1
         book.save()
-
-        # Log the successful borrowing
-        logger.info(f"Book borrowed successfully - Student: {student.name} ({student.student_id}), Book: {book.title} (Tag: {tag_id})")
+        
+        # Log the transaction
+        logger.info(f"Book borrowed: {book.title} (Tag ID: {tag_id}) by {student.name} (ID: {student_id})")
         
         return JsonResponse({
             'status': 'success',
-            'message': 'Book borrowed successfully',
-            'data': {
-                'book_title': book.title,
-                'student_name': student.name,
-                'due_date': due_date.strftime('%Y-%m-%d %H:%M:%S'),
-                'borrowed_book_id': borrowed_book.id
-            }
+            'message': f'Successfully borrowed "{book.title}"',
+            'due_date': due_date.strftime('%Y-%m-%d'),
+            'student_name': student.name,
+            'book_title': book.title
         })
         
     except Exception as e:
-        logger.error(f"Error in borrow_detected_book: {str(e)}")
-        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+        ErrorHandler.handle_error(e, "Borrowing book")
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Error borrowing book: {str(e)}'
+        }, status=500)
 
 def process_detected_book(request):
-    """Process a detected book and initiate borrowing if conditions are met"""
+    """Process a detected book from the camera and perform borrowing if student is logged in"""
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Only POST method is allowed'}, status=405)
+        
     try:
-        # Check if student is logged in
-        student_id = request.session.get('student_id')
-        if not student_id:
-            return JsonResponse({
-                'status': 'error',
-                'message': 'No student is logged in. Please log in first.'
-            }, status=401)
-
-        # Get tag_id from the request
+        # Get tag ID from request
         tag_id = request.POST.get('tag_id')
         if not tag_id:
-            return JsonResponse({'status': 'error', 'message': 'No tag_id provided'})
-        
-        # Check if book exists
+            return JsonResponse({'status': 'error', 'message': 'No tag ID provided'}, status=400)
+            
+        # Ensure tag_id is an integer
         try:
-            book = Book.objects.get(tag_id=tag_id)
-        except Book.DoesNotExist:
-            # If book doesn't exist but we have mapping info, create it
+            tag_id = int(tag_id)
+        except ValueError:
+            return JsonResponse({'status': 'error', 'message': 'Invalid tag ID format'}, status=400)
+        
+        # First check if student is logged in
+        student_id = request.session.get('student_id')
+        if student_id:
+            # Student is logged in, call borrow_detected_book with tag_id
+            # Create a new request with the tag_id
+            data = json.dumps({'tag_id': tag_id})
+            
+            # Create mock request for borrow_detected_book
+            borrow_request = HttpRequest()
+            borrow_request.method = 'POST'
+            borrow_request.META = request.META.copy()
+            borrow_request._body = data.encode('utf-8')
+            borrow_request.session = request.session  # Share the session
+            
+            # Call borrow_detected_book and return its response
+            response = borrow_detected_book(borrow_request)
+            return response
+        else:
+            # Student not logged in, just acknowledge the book detection
             if tag_id in tag_to_book_mapping:
                 book_info = tag_to_book_mapping[tag_id]
                 book = store_detected_book(tag_id, book_info)
-                if not book:
+                
+                if book:
+                    return JsonResponse({
+                        'status': 'success',
+                        'message': f'Book detected: {book.title}',
+                        'book_title': book.title,
+                        'author': book.author,
+                        'tag_id': tag_id,
+                        'needs_login': True
+                    })
+                else:
                     return JsonResponse({
                         'status': 'error',
-                        'message': f'Failed to create book for tag {tag_id}'
-                    })
+                        'message': 'Failed to store book information'
+                    }, status=500)
             else:
                 return JsonResponse({
                     'status': 'error',
-                    'message': f'No book found with tag {tag_id}'
-                })
-        
-        # Update last detection time
-        book.last_detected = timezone.now()
-        book.save()
-        
-        # Get the student from session
-        try:
-            student = Student.objects.get(student_id=student_id)
-        except Student.DoesNotExist:
-            return JsonResponse({
-                'status': 'error',
-                'message': 'Student not found. Please log in again.'
-            }, status=401)
-        
-        # If book is available and student is logged in, initiate borrowing
-        if book.available:
-            # Directly call borrow_detected_book with the same request
-            request.POST = request.POST.copy()  # Make POST mutable
-            request.POST['tag_id'] = tag_id  # Ensure tag_id is in POST
-            borrow_response = borrow_detected_book(request)
-            
-            # Parse the response
-            import json
-            response_data = json.loads(borrow_response.content)
-            
-            if borrow_response.status_code == 200:
-                return JsonResponse({
-                    'status': 'success',
-                    'message': 'Book detected and borrowed successfully',
-                    'book_info': {
-                        'title': book.title,
-                        'author': book.author,
-                        'student': student.name,
-                        'borrowed_book_id': response_data.get('data', {}).get('borrowed_book_id')
-                    }
-                })
-            else:
-                return JsonResponse({
-                    'status': 'error',
-                    'message': 'Book detected but borrowing failed',
-                    'error': response_data.get('message', 'Unknown error')
-                })
-        else:
-            # Check if this book is borrowed by the current student
-            current_borrow = BorrowedBook.objects.filter(
-                book=book,
-                student=student,
-                is_returned=False
-            ).first()
-            
-            if current_borrow:
-                return JsonResponse({
-                    'status': 'info',
-                    'message': 'You have already borrowed this book',
-                    'book_info': {
-                        'title': book.title,
-                        'author': book.author,
-                        'due_date': current_borrow.due_date.strftime('%Y-%m-%d %H:%M:%S')
-                    }
-                })
-            else:
-                return JsonResponse({
-                    'status': 'warning',
-                    'message': 'Book detected but is already borrowed by another student',
-                    'book_info': {
-                        'title': book.title,
-                        'author': book.author,
-                        'available': False
-                    }
-                })
-            
+                    'message': f'Unknown tag ID: {tag_id}'
+                }, status=404)
+                
     except Exception as e:
-        logger.error(f"Error processing detected book: {str(e)}")
+        ErrorHandler.handle_error(e, "Processing detected book")
         return JsonResponse({
             'status': 'error',
-            'message': f'Error processing book: {str(e)}'
-        })
+            'message': f'Error processing detected book: {str(e)}'
+        }, status=500)
 
 @csrf_exempt
 def return_book(request):
-    """API view to handle book returns"""
+    """Handle book return process from either scanner or manually by ID"""
     if request.method != 'POST':
-        return JsonResponse({'status': 'error', 'message': 'Only POST method is allowed'}, status=405)
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Only POST requests are allowed'
+        }, status=405)
+        
+    # Custom CSRF validation - check header or session auth
+    csrf_token = request.META.get('HTTP_X_CSRFTOKEN')
+    is_authenticated = ('student_id' in request.session or request.user.is_authenticated)
     
+    if not csrf_token and not is_authenticated:
+        logger.warning("CSRF token missing in return_book request")
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Missing CSRF token'
+        }, status=403)
+        
     try:
-        # Get the borrowed book activity ID from the request
-        activity_id = request.POST.get('activity_id')
-        if not activity_id:
-            return JsonResponse({'status': 'error', 'message': 'No activity_id provided'}, status=400)
+        # Extract data from the request
+        data = json.loads(request.body) if request.body else {}
+        borrowed_book_id = data.get('borrowed_book_id') or request.POST.get('borrowed_book_id')
+        tag_id = data.get('tag_id') or request.POST.get('tag_id')
         
-        # Get the borrowed book record
-        try:
-            borrowed_book = BorrowedBook.objects.get(id=activity_id)
-        except BorrowedBook.DoesNotExist:
-            return JsonResponse({'status': 'error', 'message': 'Borrowed book record not found'}, status=404)
-        
-        # Check if book is already returned
-        if borrowed_book.is_returned:
-            return JsonResponse({'status': 'error', 'message': 'Book is already returned'}, status=400)
-        
-        # Update the borrowed book record
+        if not borrowed_book_id and not tag_id:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Missing borrowed_book_id or tag_id parameter'
+            }, status=400)
+            
+        # Look up by ID if provided
+        if borrowed_book_id:
+            try:
+                borrowed_book = BorrowedBook.objects.get(id=borrowed_book_id, is_returned=False)
+            except BorrowedBook.DoesNotExist:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': f'No active borrowing found with ID: {borrowed_book_id}'
+                }, status=404)
+                
+        # Look up by tag ID if provided
+        elif tag_id:
+            try:
+                # Get the book by tag_id
+                book = Book.objects.get(tag_id=tag_id)
+                
+                # Check if it's currently borrowed
+                borrowed_book = BorrowedBook.objects.filter(
+                    book=book,
+                    is_returned=False
+                ).first()
+                
+                if not borrowed_book:
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': f'Book with tag ID {tag_id} is not currently borrowed'
+                    }, status=404)
+            except Book.DoesNotExist:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': f'No book found with tag ID: {tag_id}'
+                }, status=404)
+                
+        # Mark as returned
         borrowed_book.is_returned = True
         borrowed_book.returned_date = timezone.now()
         borrowed_book.save()
         
-        # Update book availability
+        # Get the book and update status
         book = borrowed_book.book
-        book.available = True
-        book.save()
+        logger.info(f"Book returned successfully - Title: {book.title}, Student: {borrowed_book.student.name}")
         
         return JsonResponse({
             'status': 'success',
-            'message': 'Book returned successfully',
+            'message': f'Book "{book.title}" returned successfully',
             'data': {
                 'book_title': book.title,
                 'student_name': borrowed_book.student.name,
                 'returned_date': borrowed_book.returned_date.strftime('%Y-%m-%d %H:%M:%S')
             }
         })
+            
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Invalid JSON in request body'
+        }, status=400)
+    except Exception as e:
+        ErrorHandler.handle_error(e, "Returning book")
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Error returning book: {str(e)}'
+        }, status=500)
+
+def main_page(request):
+    """Main page after login with options to borrow, return, and recommendations"""
+    # Check if user is logged in
+    if not request.session.get('is_student') or 'student_id' not in request.session:
+        logger.warning("User attempted to access main_page without valid session")
+        return redirect('auth_page')
+        
+    student_id = request.session.get('student_id')
+    student_name = request.session.get('student_name', 'Student')
+    
+    try:
+        # Verify student exists in database
+        student = Student.objects.filter(student_id=student_id).first()
+        if not student:
+            logger.warning(f"Student with ID {student_id} not found in database during main_page access")
+            # Clear invalid session and redirect to auth page
+            request.session.flush()
+            return redirect('auth_page')
+            
+        # Update session activity timestamp
+        request.session['last_activity'] = timezone.now().timestamp()
+        
+        # Get student's borrowed books for display
+        borrowed_books = BorrowedBook.objects.filter(
+            student=student,
+            is_returned=False
+        ).select_related('book').order_by('-borrowed_date')
+        
+        return render(request, 'library/main_page.html', {
+            'student_name': student_name,
+            'student_id': student_id,
+            'student': student,
+            'borrowed_books': borrowed_books
+        })
         
     except Exception as e:
-        logger.error(f"Error in return_book: {str(e)}")
-        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+        logger.error(f"Error in main_page: {str(e)}")
+        # In case of error, still try to show the page if we have basic session data
+        return render(request, 'library/main_page.html', {
+            'student_name': student_name,
+            'student_id': student_id,
+            'error': str(e)
+        })
+
+def recommendations(request):
+    try:
+        # Initialize the recommender
+        recommender = BookRecommender()
+        
+        # Get all books from the dataset for the dropdown
+        all_books = recommender.df['Book-Title'].unique().tolist() if recommender.df is not None else []
+        
+        # Get the selected book from the query parameters
+        selected_book = request.GET.get('book_title')
+        recommended_books = []
+        
+        if selected_book:
+            # Get recommendations
+            recommendations = recommender.get_recommendations(selected_book, top_n=4)
+            
+            # Format recommendations for the template
+            for book in recommendations:
+                recommended_books.append({
+                    'title': book['title'],
+                    'author': book['author'],
+                    'cover_image': book['image_url'],
+                    'genre': 'Not specified',  # Dataset doesn't include genre
+                    'rating': 4  # Default rating since dataset doesn't include ratings
+                })
+        
+        return render(request, 'library/recommendations.html', {
+            'books': all_books,
+            'recommended_books': recommended_books,
+            'selected_book': selected_book
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in recommendations view: {str(e)}")
+        messages.error(request, "An error occurred while getting book recommendations.")
+        return render(request, 'library/recommendations.html', {
+            'books': [],
+            'recommended_books': [],
+            'error': str(e)
+        })
+
+def about(request):
+    """View for the about page"""
+    return render(request, 'library/about.html')
+
+def admin_login(request):
+    """Admin login view"""
+    # Check if user is already authenticated
+    if request.user.is_authenticated and request.user.is_staff:
+        return redirect('admin_dashboard')
+        
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        user = authenticate(request, username=username, password=password)
+        
+        if user is not None and user.is_staff:
+            login(request, user)
+            return redirect('admin_dashboard')
+        else:
+            return render(request, 'library/admin_login.html', {
+                'error': 'Invalid username or password'
+            })
+    
+    return render(request, 'library/admin_login.html')
+
+def admin_logout(request):
+    logout(request)
+    return redirect('home')
+
+@login_required(login_url='admin_login')
+def admin_dashboard(request):
+    """Admin dashboard view - focused on recent registrations with face images"""
+    # Extra security check to ensure only staff can access this view
+    if not request.user.is_staff:
+        messages.error(request, "You don't have permission to access the admin dashboard")
+        return redirect('home')
+    
+    try:
+        # Count total students and books
+        total_students = Student.objects.count()
+        total_books = Book.objects.count()
+        
+        # Get currently borrowed books
+        books_borrowed = BorrowedBook.objects.filter(is_returned=False).count()
+        
+        # Get overdue books (more than 14 days)
+        fourteen_days_ago = timezone.now() - timezone.timedelta(days=14)
+        overdue_books = BorrowedBook.objects.filter(
+            is_returned=False,
+            borrowed_date__lt=fourteen_days_ago
+        ).count()
+        
+        # Get all recent registrations (priority to those with face images)
+        face_verified_students = Student.objects.filter(
+            face_verified=True
+        ).order_by('-registered_at')[:10]
+        
+        # Get recent registrations (regardless of verification)
+        recent_registrations = Student.objects.all().order_by('-registered_at')[:15]
+        
+        # Get currently logged-in students
+        current_logins = StudentLogin.objects.filter(
+            is_active=True,
+            logout_time__isnull=True
+        ).order_by('-login_time')[:20]
+
+        # Get recently detected books (last 24 hours)
+        recently_detected = Book.objects.filter(
+            last_detected__gte=timezone.now() - timezone.timedelta(hours=24)
+        ).order_by('-last_detected')[:10]
+
+        # Get recent borrowing activities - updated to show latest first and include all necessary fields
+        recent_activities = BorrowedBook.objects.select_related(
+            'book', 'student'
+        ).order_by(
+            '-borrowed_date'
+        )[:10]
+        
+        # Log the activities for debugging
+        logger.info(f"Found {recent_activities.count()} recent activities")
+        for activity in recent_activities:
+            logger.info(
+                f"Activity: Book '{activity.book.title}' borrowed by {activity.student.name} "
+                f"on {activity.borrowed_date.strftime('%Y-%m-%d %H:%M:%S')}"
+            )
+
+        # Get most borrowed books - updated to include more details
+        most_borrowed = BorrowedBook.objects.values(
+            'book__id',
+            'book__title', 
+            'book__author', 
+            'book__cover_image'
+        ).annotate(
+            borrow_count=Count('book__id')
+        ).order_by('-borrow_count')[:10]
+        
+        # Format most borrowed books data
+        most_borrowed_formatted = []
+        for item in most_borrowed:
+            most_borrowed_formatted.append({
+                'book': {
+                    'id': item['book__id'],
+                    'title': item['book__title'],
+                    'author': item['book__author'],
+                    'cover_image': item['book__cover_image']
+                },
+                'borrow_count': item['borrow_count']
+            })
+        
+        context = {
+            'total_books': total_books,
+            'total_students': total_students,
+            'books_borrowed': books_borrowed,
+            'overdue_books': overdue_books,
+            'verified_students': face_verified_students,
+            'recent_registrations': recent_registrations,
+            'current_logins': current_logins,
+            'now': timezone.now(),
+            'recently_detected': recently_detected,
+            'recent_activities': recent_activities,
+            'most_borrowed': most_borrowed_formatted
+        }
+        
+        # Add meta refresh header to auto-refresh the dashboard
+        response = render(request, 'library/admin_dashboard.html', context)
+        response['Refresh'] = '10'  # Refresh every 10 seconds
+        return response
+        
+    except Exception as e:
+        logger.error(f"Error in admin dashboard: {str(e)}")
+        messages.error(request, "An error occurred while loading the dashboard")
+        return redirect('home')

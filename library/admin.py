@@ -3,8 +3,8 @@ from .models import Book, Student, BorrowedBook, StudentLogin
 
 @admin.register(Book)
 class BookAdmin(admin.ModelAdmin):
-    list_display = ('title', 'author', 'isbn', 'genre', 'tag_id', 'available', 'last_detected')
-    list_filter = ('genre', 'available')
+    list_display = ('title', 'author', 'isbn', 'genre', 'tag_id', 'is_available', 'borrow_count')
+    list_filter = ('genre', 'is_available')
     search_fields = ('title', 'author', 'isbn', 'tag_id')
     readonly_fields = ('last_detected',)
     fieldsets = (
@@ -15,7 +15,7 @@ class BookAdmin(admin.ModelAdmin):
             'fields': ('tag_id', 'last_detected')
         }),
         ('Status', {
-            'fields': ('available', 'cover_image')
+            'fields': ('is_available', 'cover_image')
         }),
     )
 

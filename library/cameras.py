@@ -18,6 +18,7 @@ import pickle
 from django.contrib.auth.models import User
 from library.models import Student
 from django.utils import timezone
+import apriltag
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -39,42 +40,39 @@ class BaseCamera:
         # First try to list available cameras
         available_cameras = []
         
-        # Check common video device paths
-        device_paths = [
-            '/dev/video0',
-            '/dev/video1',
-            '/dev/video2',
-            '/dev/video3',
-            '/dev/video4'
-        ]
-        
-        # Try device paths first
-        for device_path in device_paths:
+        # Try camera indices first (more reliable without permission issues)
+        for i in range(5):  # Check first 5 indices
             try:
-                if os.path.exists(device_path):
-                    cap = cv2.VideoCapture(device_path, cv2.CAP_V4L2)
-                    if cap.isOpened():
-                        ret, frame = cap.read()
-                        if ret and frame is not None:
-                            available_cameras.append(device_path)
-                            logger.info(f"Found working camera at {device_path}")
-                        cap.release()
+                cap = cv2.VideoCapture(i)
+                if cap.isOpened():
+                    ret, frame = cap.read()
+                    if ret and frame is not None:
+                        available_cameras.append(i)
+                        logger.info(f"Found working camera at index {i}")
+                    cap.release()
             except Exception as e:
-                logger.debug(f"Camera at {device_path} not available: {str(e)}")
-
-        # If no devices found by path, try indices
+                logger.debug(f"Camera index {i} not available: {str(e)}")
+        
+        # If no cameras found by index, try device paths without sudo
         if not available_cameras:
-            for i in range(5):  # Check first 5 indices
+            device_paths = [
+                '/dev/video0',
+                '/dev/video1',
+                '/dev/video2'
+            ]
+            
+            for device_path in device_paths:
                 try:
-                    cap = cv2.VideoCapture(i)
-                    if cap.isOpened():
-                        ret, frame = cap.read()
-                        if ret and frame is not None:
-                            available_cameras.append(i)
-                            logger.info(f"Found working camera at index {i}")
-                        cap.release()
+                    if os.path.exists(device_path) and os.access(device_path, os.R_OK | os.W_OK):
+                        cap = cv2.VideoCapture(device_path, cv2.CAP_V4L2)
+                        if cap.isOpened():
+                            ret, frame = cap.read()
+                            if ret and frame is not None:
+                                available_cameras.append(device_path)
+                                logger.info(f"Found working camera at {device_path}")
+                            cap.release()
                 except Exception as e:
-                    logger.debug(f"Camera index {i} not available: {str(e)}")
+                    logger.debug(f"Camera at {device_path} not available: {str(e)}")
 
         if not available_cameras:
             raise Exception("No cameras found. Please check your camera connection and permissions.")
@@ -96,14 +94,6 @@ class BaseCamera:
                     ret, frame = self.video.read()
                     if ret and frame is not None:
                         logger.info(f"Successfully opened camera: {camera}")
-                        # Set permissions if using device path
-                        if isinstance(camera, str):
-                            try:
-                                import subprocess
-                                subprocess.run(['sudo', 'chmod', '666', camera], check=True)
-                                logger.info(f"Set permissions for {camera}")
-                            except Exception as e:
-                                logger.warning(f"Could not set permissions for {camera}: {str(e)}")
                         return
                     else:
                         self.video.release()
@@ -331,22 +321,27 @@ class IDCardScanner(BaseCamera):
                 if self.student_created:
                     # Check if this was a duplicate registration
                     if hasattr(self.student_created, 'is_duplicate') and self.student_created.is_duplicate:
-                        logger.info(f"Duplicate student detected: {self.student_created.name}")
+                        logger.info(f"Duplicate student ID detected: {self.student_created.student_id}")
                         self.is_duplicate = True
                         self.capture_complete = True
-                        self.stop()
+                        self.error_message = f"Student with ID {self.student_created.student_id} already exists. Please use a different ID card."
+                        self.processor.start_time = None
                         return
                     
                     logger.info(f"Created student record: {self.student_created.name}")
                     # Only switch to face mode for new registrations
                     self.processor.switch_to_face_mode()
                 else:
-                    self.error_message = "Failed to process ID card"
+                    self.error_message = "Could not extract valid ID from card. Please use a valid ID card."
                     self.processor.start_time = None
+                    # Reset ID card captured flag to allow another attempt
+                    self.id_card_captured = False
             except Exception as e:
                 logger.error(f"Error processing ID card: {str(e)}")
                 self.error_message = "Failed to process ID card"
                 self.processor.start_time = None
+                # Reset ID card captured flag to allow another attempt
+                self.id_card_captured = False
         else:
             self.error_message = "Failed to save ID card images"
             self.processor.start_time = None
@@ -359,23 +354,44 @@ class IDCardScanner(BaseCamera):
             self.processor.start_time = None
 
     def _draw_overlays(self, frame):
-        if self.id_card_captured and not self.capture_complete and self.box_coords:
-            x, y, box_width, box_height = self.box_coords
-            FrameProcessor.draw_rectangle(frame, (x, y), (x + box_width, y + box_height), color=(0, 255, 0))
-            FrameProcessor.draw_text(frame, "Place your face here", (x, y - 10))
+        try:
+            height, width = frame.shape[:2]
+            
+            # Draw box for face positioning
+            if self.box_coords and not self.capture_complete:
+                x, y, box_width, box_height = self.box_coords
+                FrameProcessor.draw_rectangle(frame, (x, y), (x + box_width, y + box_height), color=(0, 255, 0))
+                if not self.id_card_captured:
+                    FrameProcessor.draw_text(frame, "Position your ID card here", (x, y - 10))
+                elif not self.processor.mode == "face":
+                    FrameProcessor.draw_text(frame, "Preparing face recognition...", (x, y - 10))
+                else:
+                    FrameProcessor.draw_text(frame, "Position your face here", (x, y - 10))
 
-        if self.error_message:
-            FrameProcessor.draw_text(frame, self.error_message, (10, 60), color=(0, 0, 255))
+            # Draw error message if any
+            if self.error_message:
+                FrameProcessor.draw_text(frame, self.error_message, (10, 60), color=(0, 0, 255))
 
-        if self.student_created:
-            FrameProcessor.draw_text(frame, f"Name: {self.student_created.name}", (10, 90), color=(0, 255, 0))
+            # Draw student information and duplicate status
+            if self.student_created:
+                if self.is_duplicate:
+                    FrameProcessor.draw_text(frame, f"ID already registered: {self.student_created.student_id}", (10, 90), color=(0, 0, 255))
+                    FrameProcessor.draw_text(frame, f"Student: {self.student_created.name}", (10, 120), color=(0, 0, 255))
+                    FrameProcessor.draw_text(frame, "Please use a different ID card", (10, 150), color=(0, 0, 255))
+                else:
+                    FrameProcessor.draw_text(frame, f"Name: {self.student_created.name}", (10, 90), color=(0, 255, 0))
+                    FrameProcessor.draw_text(frame, f"ID: {self.student_created.student_id}", (10, 120), color=(0, 255, 0))
 
-        status_text = (
-            "Capturing ID card..." if not self.id_card_captured else
-            "Now capturing face..." if not self.face_saved else
-            "Capture complete!"
-        )
-        FrameProcessor.draw_text(frame, status_text, (10, 30))
+            # Draw status text
+            status_text = (
+                "Capturing ID card..." if not self.id_card_captured else
+                "ID already registered" if self.is_duplicate else
+                "Now capturing face..." if not self.face_saved else
+                "Registration complete!"
+            )
+            FrameProcessor.draw_text(frame, status_text, (10, 30))
+        except Exception as e:
+            ErrorHandler.handle_error(e, "Drawing overlays for ID card scanner")
 
 class BorrowCamera(BaseCamera):
     def __init__(self):
@@ -385,6 +401,13 @@ class BorrowCamera(BaseCamera):
         self.detection_cooldown = 2.0
         self.detected_books = set()  # Keep track of detected books in current session
         self.student_session = None  # Store student session
+        
+        # Add attributes needed for get_face_detection_status API
+        self.face_detected = False
+        self.capture_complete = False
+        self.phase = "book_detection"
+        self.student_details = None
+        self.error_message = None
 
     def set_student_session(self, student_id):
         """Set the student session for book borrowing"""
@@ -402,20 +425,9 @@ class BorrowCamera(BaseCamera):
 
             # Process AprilTag detections
             current_time = time.time()
-            detections = self.book_detector.detect_books(frame)
+            tag_ids = self.book_detector.detect(frame)
             
-            for detection in detections:
-                tag_id = detection['tag_id']
-                # Draw bounding box around detected tag
-                if 'bbox' in detection:
-                    bbox = detection['bbox']
-                    FrameProcessor.draw_rectangle(
-                        frame,
-                        (int(bbox[0]), int(bbox[1])),
-                        (int(bbox[2]), int(bbox[3])),
-                        color=(0, 255, 0)
-                    )
-                
+            for tag_id in tag_ids:
                 # Process book if cooldown has elapsed
                 if (tag_id not in self.last_detection_time or 
                     current_time - self.last_detection_time[tag_id] >= self.detection_cooldown):
@@ -502,11 +514,15 @@ class ReturnCamera(BorrowCamera):
     def __init__(self):
         super().__init__()
         self.detection_cooldown = 2.0
+        self.phase = "book_return"  # Override phase for status API
 
     def _draw_overlays(self, frame):
         height, width = frame.shape[:2]
         FrameProcessor.draw_text(frame, "Return Book Scanner", (10, 30))
         FrameProcessor.draw_text(frame, "Press 'Q' to close", (10, height - 10))
+        FrameProcessor.draw_text(frame, f"Books detected: {len(self.detected_books)}", (10, 60))
+        if self.student_session:
+            FrameProcessor.draw_text(frame, f"Student ID: {self.student_session}", (10, 90), color=(0, 255, 0))
 
     def _process_book_detection(self, tag_id):
         from library.views import store_detected_book, tag_to_book_mapping
@@ -589,7 +605,7 @@ class StudentLoginCamera(BaseCamera):
             return False
     
     def process_id_card(self, frame):
-        """Process ID card to extract student details during login"""
+        """Process ID card to extract student details and verify BOTH Name and ID against database"""
         try:
             # Save the ID card image
             full_path, cropped_path = self.processor.save_images(frame)
@@ -597,50 +613,55 @@ class StudentLoginCamera(BaseCamera):
                 # Extract text from the ID card
                 ocr_results, text_file = self.processor.perform_ocr(cropped_path)
                 if ocr_results:
-                    # Extract student name only - we don't create a new record but look for matching student
+                    # Extract student details (name and ID) from text
                     student_details = self.processor.extract_student_details(ocr_results)
+                    extracted_name = student_details.get('name')
+                    extracted_id = student_details.get('student_id')
                     
-                    if student_details.get('name'):
-                        logger.info(f"Extracted name from ID card: {student_details['name']}")
+                    # **Crucial Check: We MUST have both name and ID extracted**
+                    if extracted_name and extracted_id:
+                        logger.info(f"Extracted Name: '{extracted_name}', Extracted ID: '{extracted_id}' from presented card.")
                         
-                        # Try to find matching student in the database by name
+                        # **Strict Search: Find a student where BOTH name (case-insensitive) AND ID match EXACTLY**
                         try:
                             from .models import Student
-                            name_parts = student_details['name'].split()
-                            # Try exact name match first
-                            student = Student.objects.filter(name__iexact=student_details['name']).first()
+                            matching_student = Student.objects.filter(
+                                name__iexact=extracted_name, 
+                                student_id=extracted_id
+                            ).first()
                             
-                            # If no exact match, try with first_name and last_name
-                            if not student and len(name_parts) >= 2:
-                                first_name = name_parts[0]
-                                last_name = ' '.join(name_parts[1:])
-                                student = Student.objects.filter(
-                                    first_name__iexact=first_name, 
-                                    last_name__iexact=last_name
-                                ).first()
-                            
-                            if student:
-                                self.matched_student = student
-                                logger.info(f"Found matching student: {student.name} (ID: {student.student_id})")
+                            if matching_student:
+                                # Both Name and ID match a database record
+                                self.matched_student = matching_student
+                                self.id_card_captured = True
+                                self.id_card_capture_time = time.time()
+                                self.ocr_results = ocr_results
+                                logger.info(f"Successfully matched Name and ID to student: {matching_student.name} (ID: {matching_student.student_id})")
+                                # Ready to proceed to face verification (handled in _process_login)
                                 return True
                             else:
-                                self.error_message = "No matching student found in the database."
-                                logger.warning(f"No student found matching name: {student_details['name']}")
+                                # No student found matching BOTH the extracted name and ID
+                                self.error_message = "Name/ID on card do not match database records."
+                                logger.warning(f"No database record found matching BOTH Name: '{extracted_name}' AND ID: '{extracted_id}'.")
                                 return False
                         except Exception as e:
-                            logger.error(f"Error finding student by name: {e}")
+                            logger.error(f"Database error during strict Name/ID lookup: {e}")
+                            self.error_message = "Database error during verification."
                             return False
                     else:
-                        self.error_message = "Could not extract name from ID card."
+                        # Failed to extract both Name and ID from the card
+                        self.error_message = "Could not extract both Name and ID from card. Please reposition."
+                        logger.warning(f"Failed to extract both Name ('{extracted_name}') and ID ('{extracted_id}') from card.")
                         return False
                 else:
-                    self.error_message = "Could not extract text from ID card."
+                    self.error_message = "Could not read text from ID card. Please try again."
                     return False
             else:
-                self.error_message = "Failed to save ID card images."
+                self.error_message = "Failed to capture ID card image."
                 return False
         except Exception as e:
             ErrorHandler.handle_error(e, "Processing ID card during login")
+            self.error_message = "An error occurred during ID card processing."
             return False
             
     def _match_face(self, face_image):
@@ -819,36 +840,152 @@ class StudentLoginCamera(BaseCamera):
                 self.processor.start_time = None
 
     def _draw_overlays(self, frame):
-        # Draw box for face positioning
-        if self.box_coords and not self.capture_complete:
-            x, y, box_width, box_height = self.box_coords
-            FrameProcessor.draw_rectangle(frame, (x, y), (x + box_width, y + box_height), color=(0, 255, 0))
-            if not self.id_card_captured:
-                FrameProcessor.draw_text(frame, "Position your ID card here", (x, y - 10))
-            elif not self.ready_for_face_recognition:
-                # Show countdown message
-                if self.id_card_capture_time:
-                    seconds_left = max(0, 3 - int(time.time() - self.id_card_capture_time))
-                    FrameProcessor.draw_text(frame, f"Preparing face recognition... {seconds_left}s", (x, y - 10))
+        """Draw status text on frame"""
+        try:
+            frame_height, frame_width = frame.shape[:2]
+            
+            # Draw ID card scanning status
+            if self.id_card_captured:
+                status_text = "ID card recognized! Processing..."
+                status_color = (0, 255, 0)  # Green
             else:
-                FrameProcessor.draw_text(frame, "Position your face here", (x, y - 10))
+                status_text = "Please show your ID card"
+                status_color = (255, 255, 0)  # Yellow
+            
+            FrameProcessor.draw_text(frame, status_text, (10, 30), color=status_color)
+            
+            # Draw face detection status
+            if self.ready_for_face_recognition:
+                face_status = "Prepare for face verification..."
+                face_color = (255, 255, 0)  # Yellow
+                
+                if self.face_detected:
+                    face_status = "Face detected! Processing..."
+                    face_color = (0, 255, 0)  # Green
+                    
+                FrameProcessor.draw_text(frame, face_status, (10, 60), color=face_color)
+                
+            # Draw box for face detection if ready for face recognition
+            if self.ready_for_face_recognition and self.box_coords:
+                x, y, width, height = self.box_coords
+                FrameProcessor.draw_rectangle(frame, (x, y), (x + width, y + height), color=(0, 255, 0))
+                
+            # Draw error message if any
+            if self.error_message:
+                error_y_pos = frame_height - 30
+                FrameProcessor.draw_text(frame, self.error_message, (10, error_y_pos), color=(0, 0, 255))
+                
+            # Draw matching student info if we have one AND verification passed
+            if self.matched_student:
+                verification_passed = hasattr(self, 'best_similarity_score') and self.best_similarity_score >= 0.5
+                
+                if verification_passed:
+                    # Only display welcome message if face verification was successful
+                    welcome_text = f"Welcome, {self.matched_student.name}!"
+                    id_text = f"ID: {self.matched_student.student_id}"
+                    FrameProcessor.draw_text(frame, welcome_text, (10, 90), color=(0, 255, 0))
+                    FrameProcessor.draw_text(frame, id_text, (10, 120), color=(0, 255, 0))
+                    
+                    if hasattr(self, 'best_similarity_score'):
+                        score_text = f"Match score: {self.best_similarity_score:.2f}"
+                        FrameProcessor.draw_text(frame, score_text, (10, 150), color=(0, 255, 0))
+                else:
+                    # If we have a student match but verification failed, show that
+                    if hasattr(self, 'best_similarity_score'):
+                        error_text = f"Face verification failed. Score: {self.best_similarity_score:.2f} (required: >= 0.5)"
+                        FrameProcessor.draw_text(frame, error_text, (10, 90), color=(0, 0, 255))
+                
+            # Draw verification result if completed
+            if self.capture_complete:
+                if hasattr(self, 'best_similarity_score') and self.best_similarity_score >= 0.5:
+                    FrameProcessor.draw_text(frame, "Login successful!", (10, 180), color=(0, 255, 0))
+                else:
+                    FrameProcessor.draw_text(frame, "Login failed. Please try again.", (10, 180), color=(0, 0, 255))
+            
+            # Draw student name and ID in top corner only if we're not in the verification phase
+            # or if verification has passed
+            if self.matched_student and (self.capture_complete or not self.ready_for_face_recognition):
+                verification_passed = hasattr(self, 'best_similarity_score') and self.best_similarity_score >= 0.5
+                
+                if not self.ready_for_face_recognition or verification_passed:
+                    name_text = f"Name: {self.matched_student.name}"
+                    id_text = f"ID: {self.matched_student.student_id}"
+                    
+                    # Get text size to position it properly
+                    text_size = cv2.getTextSize(name_text, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2)[0]
+                    
+                    FrameProcessor.draw_text(
+                        frame, 
+                        name_text, 
+                        (frame_width - text_size[0] - 10, 30), 
+                        color=(255, 255, 255),
+                        scale=0.7
+                    )
+                    
+                    FrameProcessor.draw_text(
+                        frame, 
+                        id_text, 
+                        (frame_width - text_size[0] - 10, 60), 
+                        color=(255, 255, 255),
+                        scale=0.7
+                    )
+                    
+        except Exception as e:
+            ErrorHandler.handle_error(e, "Drawing overlays for student login camera")
 
-        # Draw error message if any
-        if self.error_message:
-            FrameProcessor.draw_text(frame, self.error_message, (10, 60), color=(0, 0, 255))
-
-        # Draw matched student info if available
-        if self.matched_student:
-            FrameProcessor.draw_text(frame, f"Welcome, {self.matched_student.name}!", (10, 90), color=(0, 255, 0))
-            FrameProcessor.draw_text(frame, f"ID: {self.matched_student.student_id}", (10, 120), color=(0, 255, 0))
-
-        # Draw status text
-        status_text = (
-            "Place your ID card in the box..." if not self.id_card_captured else
-            f"Preparing face recognition..." if self.id_card_captured and not self.ready_for_face_recognition else
-            "Now place your face in the box..." if not self.face_saved and self.ready_for_face_recognition else
-            "Login successful!" if self.matched_student else
-            "Login verification failed" if self.face_saved and not self.matched_student else
-            "Processing..."
-        )
-        FrameProcessor.draw_text(frame, status_text, (10, 30)) 
+class BookDetector:
+    def __init__(self):
+        # Try to import apriltag, but handle the case where it's not available
+        try:
+            import apriltag
+            self.apriltag_available = True
+            
+            self.options = apriltag.DetectorOptions(
+                families="tag36h11",
+                border=1,
+                nthreads=4,
+                quad_decimate=1.0,
+                quad_blur=0.0,
+                refine_edges=True,
+                refine_decode=False,
+                refine_pose=False,
+                debug=False,
+                quad_contours=True
+            )
+            self.detector = apriltag.Detector(self.options)
+            logger.info("AprilTag detector initialized successfully")
+        except ImportError:
+            self.apriltag_available = False
+            logger.warning("AprilTag module not available. Book detection will be limited.")
+            self.detector = None
+        
+    def detect(self, frame):
+        """Detect AprilTags in a frame"""
+        try:
+            # If AprilTag is not available, return empty list
+            if not self.apriltag_available or self.detector is None:
+                logger.warning("AprilTag detector not available. Cannot detect books.")
+                return []
+                
+            # Handle case where frame might be in bytes format
+            if isinstance(frame, bytes):
+                # Convert bytes to numpy array
+                nparr = np.frombuffer(frame, np.uint8)
+                frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            
+            # Convert frame to grayscale for tag detection
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            
+            # Detect AprilTags
+            detections = self.detector.detect(gray)
+            
+            # Return tag IDs if any were detected
+            if detections:
+                tag_ids = [detection.tag_id for detection in detections]
+                logger.info(f"Detected AprilTags: {tag_ids}")
+                return tag_ids
+            
+            return []
+        except Exception as e:
+            logger.error(f"Error detecting AprilTags: {str(e)}")
+            return [] 

@@ -164,13 +164,16 @@ function handleImageError(img) {
     
     <div class="selection-area">
         <form method="get" action="{% url 'recommendations' %}">
-            <label for="book-select" class="select-label">Select a book:</label>
-            <select id="book-select" name="book_title" class="book-select">
-                <option value="">-- Select a book --</option>
-                {% for book in books %}
-                    <option value="{{ book }}" {% if book == selected_book %}selected{% endif %}>{{ book }}</option>
-                {% endfor %}
-            </select>
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="book_title">Select a book:</label>
+                <select id="book_title" name="book_title" class="book-select">
+                    <option value="">-- Select a book --</option>
+                    {% for book in books %}
+                        <option value="{{ book }}" {% if book == selected_book %}selected{% endif %}>{{ book }}</option>
+                    {% endfor %}
+                </select>
+            </div>
             
             <button type="submit" class="recommend-button">Get Recommendations</button>
         </form>

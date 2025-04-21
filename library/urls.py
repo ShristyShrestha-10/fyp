@@ -2,7 +2,8 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path('', views.home, name='home'),  # Home page as root URL
+    path('', views.auth_page, name='auth_page'),  # Default landing page is now auth page
+    path('home/', views.home, name='home'),  # Move home to its own URL
     path('camera-feed/', views.camera_feed, name='camera_feed'),
     path('video-feed/<str:camera_type>/', views.video_feed, name='video_feed'),
     path('capture-frame/<str:camera_type>/', views.capture_frame, name='capture_frame'),
@@ -14,8 +15,9 @@ urlpatterns = [
     path('admin/login/', views.admin_login, name='admin_login'),
     path('admin/logout/', views.admin_logout, name='admin_logout'),
     path('admin/dashboard/', views.admin_dashboard, name='admin_dashboard'),
-    path('student_login/', views.student_login, name='student_login'),
-    path('student_logout/', views.student_logout, name='student_logout'),
+    path('student-login/', views.student_login, name='student_login'),
+    path('student-logout/', views.student_logout, name='student_logout'),
+    path('register-student/', views.register_student, name='register_student'),
     path('get-face-detection-status/', views.get_face_detection_status, name='get_face_detection_status'),
     path('delete-book/<int:book_id>/', views.delete_book, name='delete_book'),
     path('delete-activity/<int:activity_id>/', views.delete_activity, name='delete_activity'),

@@ -50,6 +50,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'library.middleware.SessionSecurityMiddleware',  # Add our custom session security middleware
+    'library.middleware.SessionMaintenanceMiddleware',  # Add our custom session maintenance middleware
 ]
 
 ROOT_URLCONF = 'librarain.urls'
@@ -168,3 +170,11 @@ CHANNEL_LAYERS = {
         'BACKEND': 'channels.layers.InMemoryChannelLayer'
     }
 }
+
+# Session settings for improved security
+SESSION_COOKIE_AGE = 86400  # 24 hours in seconds (increased from 30 minutes)
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Changed to False to maintain sessions
+SESSION_SAVE_EVERY_REQUEST = True
+SESSION_COOKIE_SECURE = False  # Set to True in production with HTTPS
+SESSION_COOKIE_HTTPONLY = True
+SESSION_TIMEOUT = 86400  # 24 hours in seconds for our custom session timeout

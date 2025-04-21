@@ -1,0 +1,200 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library Authentication</title>
+    <link rel="stylesheet" href="{% static 'library/main.css' %}">
+    <style>
+        .auth-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .auth-header {
+            margin-bottom: 40px;
+            text-align: center;
+        }
+        
+        .auth-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .auth-header p {
+            font-size: 1.2rem;
+            color: #666;
+        }
+        
+        .auth-options {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 40px;
+            width: 100%;
+        }
+        
+        .auth-card {
+            width: 400px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .auth-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 12px 20px rgba(0,0,0,0.15);
+        }
+        
+        .card-header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .card-header h2 {
+            margin: 0;
+            font-size: 1.8rem;
+        }
+        
+        .card-body {
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .card-body p {
+            margin-bottom: 25px;
+            color: #555;
+            line-height: 1.6;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            text-decoration: none;
+        }
+        
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-register {
+            background-color: #2ecc71;
+        }
+        
+        .btn-register:hover {
+            background-color: #27ae60;
+        }
+        
+        .btn-login {
+            background-color: #3498db;
+        }
+        
+        .btn-login:hover {
+            background-color: #2980b9;
+        }
+        
+        .admin-link {
+            margin-top: 40px;
+            font-size: 0.9rem;
+        }
+        
+        .admin-link a {
+            color: #7f8c8d;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        
+        .admin-link a:hover {
+            color: #2c3e50;
+            text-decoration: underline;
+        }
+        
+        @media (max-width: 900px) {
+            .auth-options {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .auth-card {
+                width: 100%;
+                max-width: 400px;
+                margin-bottom: 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="top-banner">
+        <p>Library Management System</p>
+    </div>
+
+    <nav class="navigation">
+        <div class="container">
+            <a href="{% url 'auth_page' %}" class="logo">
+                <span class="logo-text">L</span>
+                <span class="logo-text">I</span>
+                <span class="logo-text">B</span>
+                <span class="logo-text">R</span>
+                <span class="logo-text">A</span>
+                <span class="logo-text">R</span>
+                <span class="logo-text">Y</span>
+            </a>
+            <div class="nav-links">
+                <a href="{% url 'about' %}">ABOUT</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="auth-container">
+        <div class="auth-header">
+            <h1>Welcome to the Library Management System</h1>
+            <p>Please login or register to access library services</p>
+        </div>
+        
+        <div class="auth-options">
+            <!-- Student Login Card -->
+            <div class="auth-card">
+                <div class="card-header">
+                    <h2>Student Login</h2>
+                </div>
+                <div class="card-body">
+                    <p>Already registered? Login with your ID card and face verification to borrow books, return books, and get recommendations.</p>
+                    <a href="{% url 'student_login' %}" class="btn btn-login">Login with ID Card</a>
+                </div>
+            </div>
+            
+            <!-- Student Registration Card -->
+            <div class="auth-card">
+                <div class="card-header">
+                    <h2>New Registration</h2>
+                </div>
+                <div class="card-body">
+                    <p>First time user? Register with your ID card and face to create your library account and access all services.</p>
+                    <a href="{% url 'register_student' %}" class="btn btn-register">Register with ID Card</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="admin-link">
+            <a href="{% url 'admin_login' %}">Admin Login</a>
+        </div>
+    </div>
+</body>
+</html> 

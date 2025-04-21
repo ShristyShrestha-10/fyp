@@ -1,6 +1,0 @@
-User:
-
-
-
-Extract name, ID, Course Name, Validity Date of ID Card. 
-Assistant: Abhishek Abhishek.

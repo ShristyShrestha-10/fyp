@@ -1,8 +1,0 @@
-User:
-
-
-
-Extract all the information from the ID card 
-Assistant: Abhishek Shah
-
-The ID card  appears to be for a college named Kathmandu.
