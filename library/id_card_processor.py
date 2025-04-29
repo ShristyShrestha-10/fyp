@@ -30,8 +30,21 @@ class IDCardProcessor:
         self.model = None
         self.tokenizer = None
         
-        # Check for CUDA availability
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        # Check for CUDA availability - with better error handling
+        try:
+            if torch.cuda.is_available():
+                # Check if CUDA is properly working
+                test_tensor = torch.zeros(1).cuda()
+                test_tensor.cpu()  # Try to move back to CPU to ensure operations work
+                self.device = "cuda"
+                logger.info("CUDA is available and working properly")
+            else:
+                self.device = "cpu"
+                logger.info("CUDA not available, using CPU instead")
+        except Exception as e:
+            logger.warning(f"Error testing CUDA: {str(e)}, falling back to CPU")
+            self.device = "cpu"
+        
         logger.info(f"Using device: {self.device}")
         
         # Initialize Moondream2 model and tokenizer
@@ -39,13 +52,26 @@ class IDCardProcessor:
             model_id = "vikhyatk/moondream2"
             
             self.tokenizer = AutoTokenizer.from_pretrained(model_id)
-            self.model = AutoModelForCausalLM.from_pretrained(
-                model_id,
-                trust_remote_code=True,
-                torch_dtype=torch.float16 if self.device == "cuda" else torch.float32,
-                device_map="auto" if self.device == "cuda" else None
-            )
-            logger.info("Successfully initialized Moondream2 model")
+            
+            # Use different loading strategy based on device
+            if self.device == "cuda":
+                self.model = AutoModelForCausalLM.from_pretrained(
+                    model_id,
+                    trust_remote_code=True,
+                    torch_dtype=torch.float16,
+                    device_map="auto"
+                )
+            else:
+                self.model = AutoModelForCausalLM.from_pretrained(
+                    model_id,
+                    trust_remote_code=True,
+                        torch_dtype=torch.float32,
+                        device_map=None
+                )
+                    # For CPU, explicitly move model to CPU to avoid any device confusion
+                self.model.to("cpu")
+                    
+            logger.info(f"Successfully initialized Moondream2 model on {self.device}")
         except Exception as e:
             logger.error(f"Error initializing Moondream2 model: {str(e)}")
             # Don't raise the error, just log it and continue with limited functionality
@@ -156,47 +182,110 @@ class IDCardProcessor:
             # Load image
             image = Image.open(image_path)
             
-            # Process with Moondream2 
+            # Process with Moondream2 with robust error handling
             try:
+                # Verify device is still valid
+                current_device = next(self.model.parameters()).device
+                logger.info(f"Current model device: {current_device}")
+                
                 # Check if the model has the method we expect
                 if hasattr(self.model, "answer_question") and callable(getattr(self.model, "answer_question")):
-                    # Use answer_question method if available
+                    # Use answer_question method if available - safer method as it handles device internally
                     prompt = "This is a student ID card. Extract the student's full name and ID number from this ID card. Format your response as: 'Name: [full name], ID: [ID number]'. If you cannot clearly see either the name or ID, indicate with 'unknown'."
                     generated_text = self.model.answer_question(image, prompt)
                     logger.info("Using model.answer_question method")
                 elif hasattr(self.model, "query") and callable(getattr(self.model, "query")):
-                    # Use query method if available
+                    # Use query method if available - safer method as it handles device internally
                     prompt = "This is a student ID card. Extract the student's full name and ID number from this ID card. Format your response as: 'Name: [full name], ID: [ID number]'. If you cannot clearly see either the name or ID, indicate with 'unknown'."
                     response = self.model.query(
                         image=image, 
-                        text=prompt  # Using 'text' parameter as per error message
+                        text=prompt
                     )
                     generated_text = response.get("answer", "")
                     logger.info("Using model.query method with text parameter")
                 else:
-                    # Direct model call with tokenizer
-                    logger.info("Using direct model call with tokenizer")
+                    # Direct model call with tokenizer - with explicit device handling
+                    logger.info(f"Using direct model call with tokenizer on device {current_device}")
+                    
+                    # Create inputs and ensure they're on the correct device
                     inputs = self.tokenizer(
-                        f"<image>\nThis is a student ID card. Extract the student's full name and ID number from this ID card. Format your response as: 'Name: [full name], ID: [ID number]'. If you cannot clearly see either the name or ID, indicate with 'unknown'.",
+                        f"<image>\nThis is a student ID card. Extract the student's full name and ID number from this ID card. Format your response as: 'Name: [full name], ID: [ID number]'.",
                         return_tensors="pt"
-                    ).to(self.device)
+                    )
                     
-                    # Preprocess the image according to the model's requirements
-                    pixels = torch.from_numpy(np.array(image)).permute(2, 0, 1).unsqueeze(0).to(self.device)
+                    # Move inputs to the same device as model
+                    inputs = {k: v.to(current_device) for k, v in inputs.items()}
                     
-                    # Add pixel_values to the inputs
-                    inputs["pixel_values"] = pixels
+                    # Convert image to tensor and ensure it's on the correct device
+                    try:
+                        # Preprocess the image according to the model's requirements
+                        img_array = np.array(image)
+                        if len(img_array.shape) == 2:  # Convert grayscale to RGB if needed
+                            img_array = np.stack([img_array] * 3, axis=2)
+                        
+                        pixels = torch.from_numpy(img_array).permute(2, 0, 1).unsqueeze(0)
+                        pixels = pixels.to(current_device)
                     
-                    # Generate text
-                    with torch.no_grad():
-                        outputs = self.model.generate(
-                            **inputs,
-                            max_new_tokens=100,
-                            do_sample=False
-                        )
+                        # Add pixel_values to the inputs
+                        inputs["pixel_values"] = pixels
                     
-                    # Decode the generated text
-                    generated_text = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+                        # Generate text
+                        with torch.no_grad():
+                            outputs = self.model.generate(
+                                **inputs,
+                                max_new_tokens=100,
+                                do_sample=False
+                            )
+                        
+                        # Decode the generated text
+                        generated_text = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+                    except Exception as e:
+                        logger.error(f"Error processing image tensor: {str(e)}")
+                        # Fall back to CPU processing if CUDA fails
+                        logger.info("Falling back to CPU for image processing")
+                        
+                        # Move model to CPU temporarily if needed
+                        original_device = current_device
+                        self.model = self.model.to("cpu")
+                        
+                        # Process on CPU
+                        inputs = {k: v.to("cpu") for k, v in inputs.items()}
+                        pixels = torch.from_numpy(np.array(image)).permute(2, 0, 1).unsqueeze(0).to("cpu")
+                        inputs["pixel_values"] = pixels
+                        
+                        with torch.no_grad():
+                            outputs = self.model.generate(
+                                **inputs,
+                                max_new_tokens=100,
+                                do_sample=False
+                            )
+                        
+                        generated_text = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+                    except Exception as e:
+                        logger.error(f"Error processing image tensor: {str(e)}")
+                        # Fall back to CPU processing if CUDA fails
+                        logger.info("Falling back to CPU for image processing")
+                        
+                        # Move model to CPU temporarily if needed
+                        original_device = current_device
+                        self.model = self.model.to("cpu")
+                        
+                        # Process on CPU
+                        inputs = {k: v.to("cpu") for k, v in inputs.items()}
+                        pixels = torch.from_numpy(np.array(image)).permute(2, 0, 1).unsqueeze(0).to("cpu")
+                        inputs["pixel_values"] = pixels
+                        
+                        with torch.no_grad():
+                            outputs = self.model.generate(
+                                **inputs,
+                                max_new_tokens=100,
+                                do_sample=False
+                            )
+                        
+                        generated_text = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+                        
+                        # Restore model to original device
+                        self.model = self.model.to(original_device)
                 
                 # If no text was generated, use fallback
                 if not generated_text:

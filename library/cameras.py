@@ -43,7 +43,7 @@ class BaseCamera:
         # Try camera indices first (more reliable without permission issues)
         for i in range(5):  # Check first 5 indices
             try:
-                cap = cv2.VideoCapture(i)
+                cap = cv2.VideoCapture(2)
                 if cap.isOpened():
                     ret, frame = cap.read()
                     if ret and frame is not None:
@@ -57,7 +57,7 @@ class BaseCamera:
         if not available_cameras:
             device_paths = [
                 '/dev/video0',
-                '/dev/video1',
+                # '/dev/video1',
                 '/dev/video2'
             ]
             
@@ -479,7 +479,7 @@ class BorrowCamera(BaseCamera):
             book_info = tag_to_book_mapping[tag_id]
             book = store_detected_book(tag_id, book_info)
             if book:
-                logger.info(f"Detected and processed book with tag ID: {tag_id}")
+                logger.info(f"Detected book for borrowing with tag ID: {tag_id}")
                 
                 if not self.student_session:
                     logger.warning("No student session available for book borrowing")
@@ -488,7 +488,6 @@ class BorrowCamera(BaseCamera):
                 # Create a request with the student session
                 request = HttpRequest()
                 request.method = 'POST'
-                request.POST = {'tag_id': str(tag_id)}
                 
                 # Add session middleware
                 middleware = SessionMiddleware(lambda x: None)
@@ -496,7 +495,12 @@ class BorrowCamera(BaseCamera):
                 
                 # Set the student session
                 request.session['student_id'] = self.student_session
+                request.session['is_student'] = True  # Add this flag to bypass CSRF validation
                 request.session.save()
+                
+                # Set JSON body with tag_id
+                data = json.dumps({'tag_id': tag_id})
+                request._body = data.encode('utf-8')
                 
                 # Import the view function here to avoid circular imports
                 from library.views import process_detected_book
@@ -504,9 +508,9 @@ class BorrowCamera(BaseCamera):
                     # Call the process_detected_book view
                     response = process_detected_book(request)
                     response_data = json.loads(response.content)
-                    logger.info(f"Book detection processed: {response_data.get('message', 'Unknown response')}")
+                    logger.info(f"Book borrowing processed: {response_data.get('message', 'Unknown response')}")
                 except Exception as e:
-                    logger.error(f"Error processing book detection: {str(e)}")
+                    logger.error(f"Error processing book borrowing: {str(e)}")
         else:
             logger.warning(f"Detected unknown tag ID: {tag_id}")
 
@@ -526,10 +530,46 @@ class ReturnCamera(BorrowCamera):
 
     def _process_book_detection(self, tag_id):
         from library.views import store_detected_book, tag_to_book_mapping
+        from django.http import HttpRequest
+        from django.contrib.sessions.middleware import SessionMiddleware
+        import json
+        
         if tag_id in tag_to_book_mapping:
             book_info = tag_to_book_mapping[tag_id]
-            store_detected_book(tag_id, book_info)
-            logger.info(f"Detected and processed returned book with tag ID: {tag_id}")
+            book = store_detected_book(tag_id, book_info)
+            if book:
+                logger.info(f"Detected book for return with tag ID: {tag_id}")
+                
+                if not self.student_session:
+                    logger.warning("No student session available for book return")
+                    return
+                
+                # Create a request with the student session
+                request = HttpRequest()
+                request.method = 'POST'
+                
+                # Add session middleware
+                middleware = SessionMiddleware(lambda x: None)
+                middleware.process_request(request)
+                
+                # Set the student session
+                request.session['student_id'] = self.student_session
+                request.session['is_student'] = True  # Add this flag to bypass CSRF validation
+                request.session.save()
+                
+                # Set JSON body with tag_id
+                data = json.dumps({'tag_id': tag_id})
+                request._body = data.encode('utf-8')
+                
+                # Import the view function here to avoid circular imports
+                from library.views import return_book
+                try:
+                    # Call the return_book view
+                    response = return_book(request)
+                    response_data = json.loads(response.content)
+                    logger.info(f"Book return processed: {response_data.get('message', 'Unknown response')}")
+                except Exception as e:
+                    logger.error(f"Error processing book return: {str(e)}")
         else:
             logger.warning(f"Detected unknown tag ID: {tag_id}")
 
@@ -588,7 +628,7 @@ class StudentLoginCamera(BaseCamera):
                     match_result = self._match_face(face_image)
                     
                     # Only set capture_complete if we have a match with sufficient similarity score
-                    if match_result and hasattr(self, 'best_similarity_score') and self.best_similarity_score >= 0.5:
+                    if match_result and hasattr(self, 'best_similarity_score') and self.best_similarity_score >= 0.3:
                         return True
                 
                 # Draw a rectangle around the detected face
@@ -691,7 +731,7 @@ class StudentLoginCamera(BaseCamera):
                     self.best_similarity_score = similarity_score  # Store for API access
                     
                     # Check if the face matches (lower distance is better)
-                    if face_distance < 0.5:  # Threshold for face matching is 0.5
+                    if face_distance < 0.3:  # Threshold for face matching is 0.5
                         logger.info(f"Face verification successful for student: {self.matched_student.name} with similarity score: {similarity_score:.2f}")
                         
                         # Record successful login in StudentLogin table
@@ -709,72 +749,14 @@ class StudentLoginCamera(BaseCamera):
                         
                         return True
                     else:
-                        self.error_message = f"Face verification failed. Similarity score: {similarity_score:.2f} (required: > 0.5)"
-                        self.matched_student = None  # Clear the match as face didn't verify
+                        self.error_message = f"Face verification failed. Similarity score: {similarity_score:.2f} (required: > 0.3)"
                         return False
                 except Exception as e:
                     logger.error(f"Error comparing face encodings: {e}")
                     self.error_message = "Error during face verification."
                     return False
-            
-            # Otherwise, search all verified students
-            rgb_face = cv2.cvtColor(face_image, cv2.COLOR_BGR2RGB)
-            unknown_encoding = face_recognition.face_encodings(rgb_face)
-            
-            if not unknown_encoding:
-                self.error_message = "Could not extract face features. Please try again."
-                return False
-                
-            unknown_encoding = unknown_encoding[0]
-            
-            # Get all students with verified faces
-            from .models import Student, StudentLogin
-            from django.utils import timezone
-            verified_students = Student.objects.filter(face_verified=True).exclude(face_encoding__isnull=True)
-            
-            best_match = None
-            best_match_distance = 0.5  # Threshold for face matching is 0.5
-            best_similarity_score = 0
-            
-            for student in verified_students:
-                try:
-                    # Extract the stored encoding
-                    if student.face_encoding:
-                        known_encoding = pickle.loads(student.face_encoding)
-                        
-                        # Calculate face distance
-                        face_distance = face_recognition.face_distance([known_encoding], unknown_encoding)[0]
-                        similarity_score = 1.0 - face_distance
-                        
-                        # Lower distance means better match
-                        if face_distance < best_match_distance:
-                            best_match = student
-                            best_match_distance = face_distance
-                            best_similarity_score = similarity_score
-                except Exception as e:
-                    logger.warning(f"Error matching face for student {student.name}: {str(e)}")
-                    continue
-            
-            if best_match:
-                self.matched_student = best_match
-                self.best_similarity_score = best_similarity_score  # Store for API access
-                logger.info(f"Face matched to student: {best_match.name} (ID: {best_match.student_id}) with similarity score: {best_similarity_score:.2f}")
-                
-                # Record login in StudentLogin table with appropriate status based on similarity score
-                status = "Verified" if best_similarity_score >= 0.5 else "Not Verified"
-                
-                StudentLogin.objects.create(
-                    student=best_match,
-                    login_time=timezone.now(),
-                    status=status,
-                    similarity_score=best_similarity_score,
-                    is_active=True
-                )
-                
-                return True
             else:
-                self.error_message = "Face not recognized. Please try again or contact library staff."
-                logger.info("No matching student found for the detected face")
+                self.error_message = "No student ID verified. Please scan your ID card first."
                 return False
                 
         except Exception as e:
@@ -814,6 +796,10 @@ class StudentLoginCamera(BaseCamera):
                 self.processor.switch_to_face_mode()  # Switch to face mode after ID captured
                 self.processor.start_time = None  # Reset timer for face capture
                 self.ready_for_face_recognition = False  # Not ready for face recognition yet
+                # Initialize retry counter
+                if not hasattr(self, 'face_recognition_attempts'):
+                    self.face_recognition_attempts = 0
+                self.max_face_recognition_attempts = 3  # Maximum number of attempts
             else:
                 self.processor.start_time = None  # Reset timer if ID card capture failed
         
@@ -829,12 +815,22 @@ class StudentLoginCamera(BaseCamera):
             
             if face_match_result:
                 # Check if we have a matched student with sufficient similarity score
-                if self.matched_student and hasattr(self, 'best_similarity_score') and self.best_similarity_score >= 0.5:
+                if self.matched_student and hasattr(self, 'best_similarity_score') and self.best_similarity_score >= 0.3:
                     self.capture_complete = True
-                elif self.face_saved and (not hasattr(self, 'best_similarity_score') or self.best_similarity_score < 0.5):
+                    self.face_recognition_attempts = 0  # Reset attempts counter on success
+                elif self.face_saved and (not hasattr(self, 'best_similarity_score') or self.best_similarity_score < 0.3):
                     # Face was detected but similarity score was too low
-                    self.error_message = f"Face verification failed. Similarity score: {getattr(self, 'best_similarity_score', 0):.2f} (required: >= 0.5)"
-                    self.processor.start_time = None
+                    self.face_recognition_attempts += 1
+                    
+                    if self.face_recognition_attempts >= self.max_face_recognition_attempts:
+                        self.error_message = f"Face verification failed after {self.face_recognition_attempts} attempts. Similarity score: {getattr(self, 'best_similarity_score', 0):.2f} (required: >= 0.3)"
+                        self.processor.start_time = None
+                    else:
+                        # Reset timer for another attempt
+                        self.processor.start_time = None
+                        self.face_saved = False  # Reset face_saved to trigger another capture
+                        self.error_message = f"Face verification attempt {self.face_recognition_attempts}/{self.max_face_recognition_attempts} failed. Trying again... Please position your face in the green box."
+                        logger.info(f"Face verification retry {self.face_recognition_attempts}/{self.max_face_recognition_attempts}")
             elif self.error_message is None:
                 self.error_message = "No face detected. Please position your face in the green box."
                 self.processor.start_time = None
@@ -877,7 +873,7 @@ class StudentLoginCamera(BaseCamera):
                 
             # Draw matching student info if we have one AND verification passed
             if self.matched_student:
-                verification_passed = hasattr(self, 'best_similarity_score') and self.best_similarity_score >= 0.5
+                verification_passed = hasattr(self, 'best_similarity_score') and self.best_similarity_score >= 0.3
                 
                 if verification_passed:
                     # Only display welcome message if face verification was successful
@@ -892,12 +888,12 @@ class StudentLoginCamera(BaseCamera):
                 else:
                     # If we have a student match but verification failed, show that
                     if hasattr(self, 'best_similarity_score'):
-                        error_text = f"Face verification failed. Score: {self.best_similarity_score:.2f} (required: >= 0.5)"
+                        error_text = f"Face verification failed. Score: {self.best_similarity_score:.2f} (required: >= 0.3"
                         FrameProcessor.draw_text(frame, error_text, (10, 90), color=(0, 0, 255))
                 
             # Draw verification result if completed
             if self.capture_complete:
-                if hasattr(self, 'best_similarity_score') and self.best_similarity_score >= 0.5:
+                if hasattr(self, 'best_similarity_score') and self.best_similarity_score >= 0.3:
                     FrameProcessor.draw_text(frame, "Login successful!", (10, 180), color=(0, 255, 0))
                 else:
                     FrameProcessor.draw_text(frame, "Login failed. Please try again.", (10, 180), color=(0, 0, 255))
@@ -905,7 +901,7 @@ class StudentLoginCamera(BaseCamera):
             # Draw student name and ID in top corner only if we're not in the verification phase
             # or if verification has passed
             if self.matched_student and (self.capture_complete or not self.ready_for_face_recognition):
-                verification_passed = hasattr(self, 'best_similarity_score') and self.best_similarity_score >= 0.5
+                verification_passed = hasattr(self, 'best_similarity_score') and self.best_similarity_score >= 0.3
                 
                 if not self.ready_for_face_recognition or verification_passed:
                     name_text = f"Name: {self.matched_student.name}"

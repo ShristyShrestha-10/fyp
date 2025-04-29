@@ -87,7 +87,7 @@ function handleFaceDetectionStatus(data) {
     }
 
     // Handle face verification success
-    if (data.face_saved && data.student_name && data.student_id && data.similarity_score >= 0.5) {
+    if (data.face_saved && data.student_name && data.student_id && data.similarity_score >= 0.3) {
         updateStatus(`Welcome ${data.student_name}! Verification successful (Score: ${data.similarity_score.toFixed(2)}).`);
         updatePhase('Verification Complete');
         
@@ -117,9 +117,9 @@ function handleFaceDetectionStatus(data) {
         setTimeout(() => {
             form.submit();
         }, 3000);
-    } else if (data.face_saved && data.similarity_score && data.similarity_score < 0.5) {
+    } else if (data.face_saved && data.similarity_score && data.similarity_score < 0.3) {
         // Face was processed but similarity score was too low
-        updateError(`Face verification failed. Similarity score (${data.similarity_score.toFixed(2)}) below threshold (0.5).`);
+        updateError(`Face verification failed. Similarity score (${data.similarity_score.toFixed(2)}) below threshold (0.3).`);
         updatePhase('Verification Failed');
     } else if (data.face_saved && !data.student_name) {
         // Face was processed but no match was found

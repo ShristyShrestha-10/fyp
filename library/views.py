@@ -539,20 +539,7 @@ def student_login(request):
             
             # If the face is verified, set session data and return success
             if is_verified:
-                # Set session variables
-                request.session['student_id'] = student.student_id
-                request.session['student_name'] = student.name
-                request.session['is_student'] = True
-                request.session['last_activity'] = timezone.now().timestamp()
-                request.session['login_time'] = timezone.now().timestamp()
-                
-                # Generate a new session key for security (prevent session fixation)
-                request.session.cycle_key()
-                
-                # Set a longer session timeout (1 day by default)
-                request.session.set_expiry(86400)
-                
-                # Create a login record
+                # Create a login record before setting session - as a backup if session fails
                 login_record = StudentLogin.objects.create(
                     student=student,
                     login_time=timezone.now(),
@@ -561,13 +548,36 @@ def student_login(request):
                     is_active=True
                 )
                 
-                logger.info(f"Student {student.name} (ID: {student.student_id}) logged in successfully")
+                # Try to set session variables with error handling
+                session_success = True
+                try:
+                    # Set session variables
+                    request.session['student_id'] = student.student_id
+                    request.session['student_name'] = student.name
+                    request.session['is_student'] = True
+                    request.session['last_activity'] = timezone.now().timestamp()
+                    request.session['login_time'] = timezone.now().timestamp()
+                    
+                    # Generate a new session key for security (prevent session fixation)
+                    request.session.cycle_key()
+                    
+                    # Set a longer session timeout (1 day by default)
+                    request.session.set_expiry(86400)
+                except Exception as e:
+                    # Log session failure but don't block login - we have the login record as backup
+                    session_success = False
+                    logger.error(f"Session storage failed for student {student.name}: {str(e)}")
+                    ErrorHandler.handle_error(e, "Student login session storage")
                 
+                logger.info(f"Student {student.name} (ID: {student.student_id}) logged in successfully. Session status: {'success' if session_success else 'failed'}")
+                
+                # Return success even if session failed (we have the login record)
                 return JsonResponse({
                     'status': 'success',
-                    'message': 'Login successful',
+                    'message': 'Login successful' + ('' if session_success else ' (session storage issue - limited functionality)'),
                     'student_name': student.name,
-                    'redirect_url': reverse('main_page')  # Redirect to main page after login
+                    'student_id': student.student_id,
+                    'redirect_url': '/main-page/'  # Use absolute URL path to ensure proper redirection
                 })
             else:
                 # Create a failed login record to track verification failures
@@ -582,7 +592,7 @@ def student_login(request):
                 logger.warning(f"Face verification failed for student {student.name} (ID: {student.student_id}) with similarity score: {similarity_score}")
                 return JsonResponse({
                     'status': 'error',
-                    'message': f'Face verification failed. Similarity score: {similarity_score:.2f} (required: >= 0.5)',
+                    'message': f'Face verification failed. Similarity score: {similarity_score:.2f} (required: >= 0.3)',
                     'similarity_score': similarity_score
                 })
                 
@@ -612,17 +622,10 @@ def student_logout(request):
             CameraFactory.remove_camera(camera_type)
             logger.info(f"Stopped camera for student logout: {camera_type}")
             
-        # Clear torch CUDA memory if available
-        try:
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
-                logger.info("Cleared GPU memory during student logout")
-        except Exception as e:
-            logger.warning(f"Error clearing GPU memory: {str(e)}")
-            
-        # Update login record to mark as inactive
+        # Safely attempt to clear GPU memory if needed
         student_id = request.session.get('student_id')
         if student_id:
+            # Update login record to mark as inactive
             try:
                 # Get the student object
                 student = Student.objects.get(student_id=student_id)
@@ -671,9 +674,9 @@ def get_face_detection_status(request):
         # Return the status - using getattr with default values for safety
         response = {
             'status': 'Capturing...',
-            'face_detected': getattr(camera, 'face_detected', False),
-            'face_saved': getattr(camera, 'face_saved', False),
-            'capture_complete': getattr(camera, 'capture_complete', False),
+            'face_detected': bool(getattr(camera, 'face_detected', False)),
+            'face_saved': bool(getattr(camera, 'face_saved', False)),
+            'capture_complete': bool(getattr(camera, 'capture_complete', False)),
             'error_message': getattr(camera, 'error_message', None),
             'phase': getattr(camera, 'phase', 'detection'),
         }
@@ -698,19 +701,19 @@ def get_face_detection_status(request):
             response['student_details'] = student_details
             
             # Only set is_verified to true if the similarity score meets the threshold
-            has_sufficient_score = (hasattr(camera, 'best_similarity_score') and 
-                                   camera.best_similarity_score >= 0.5)
+            has_sufficient_score = bool(hasattr(camera, 'best_similarity_score') and 
+                                   camera.best_similarity_score >= 0.3)
             response['is_verified'] = has_sufficient_score
             
             # Add similarity score if available (calculated during face matching)
             if hasattr(camera, 'best_similarity_score'):
-                response['similarity_score'] = round(camera.best_similarity_score, 2)
+                response['similarity_score'] = float(round(camera.best_similarity_score, 2))
         
         # Add specific status for borrow/return camera
         if camera_type in ['borrow', 'return'] and hasattr(camera, 'detected_books'):
-            response['detected_books'] = len(camera.detected_books)
+            response['detected_books'] = int(len(camera.detected_books))
             if hasattr(camera, 'student_session') and camera.student_session:
-                response['student_session'] = camera.student_session
+                response['student_session'] = str(camera.student_session)
                 # Look up student details if we have a session but no details yet
                 if not student_details and camera.student_session:
                     try:
@@ -726,8 +729,8 @@ def get_face_detection_status(request):
             
         # For student login, also check ID card status
         if camera_type == 'student_login':
-            response['id_card_captured'] = getattr(camera, 'id_card_captured', False)
-            response['ready_for_face_recognition'] = getattr(camera, 'ready_for_face_recognition', False)
+            response['id_card_captured'] = bool(getattr(camera, 'id_card_captured', False))
+            response['ready_for_face_recognition'] = bool(getattr(camera, 'ready_for_face_recognition', False))
         
         return JsonResponse(response)
     except Exception as e:
@@ -1084,6 +1087,8 @@ def return_book(request):
         
         # Get the book and update status
         book = borrowed_book.book
+        book.is_available = True  # Set book as available again
+        book.save()  # Save the book to update its status
         logger.info(f"Book returned successfully - Title: {book.title}, Student: {borrowed_book.student.name}")
         
         return JsonResponse({
@@ -1264,19 +1269,21 @@ def admin_dashboard(request):
             last_detected__gte=timezone.now() - timezone.timedelta(hours=24)
         ).order_by('-last_detected')[:10]
 
-        # Get recent borrowing activities - updated to show latest first and include all necessary fields
+        # Get recent borrowing activities - show both borrowed and returned books
         recent_activities = BorrowedBook.objects.select_related(
             'book', 'student'
         ).order_by(
-            '-borrowed_date'
-        )[:10]
+            '-borrowed_date' if 'borrowed' in request.GET.get('sort', 'borrowed').lower() else '-returned_date'
+        )[:20]  # Increased from 10 to 20 to show more activities
         
         # Log the activities for debugging
-        logger.info(f"Found {recent_activities.count()} recent activities")
+        logger.info(f"Found {recent_activities.count()} recent activities for admin dashboard")
         for activity in recent_activities:
+            status = "RETURNED" if activity.is_returned else "BORROWED"
+            return_info = f", returned on {activity.returned_date.strftime('%Y-%m-%d %H:%M:%S')}" if activity.is_returned and activity.returned_date else ""
             logger.info(
-                f"Activity: Book '{activity.book.title}' borrowed by {activity.student.name} "
-                f"on {activity.borrowed_date.strftime('%Y-%m-%d %H:%M:%S')}"
+                f"Activity: Book '{activity.book.title}' {status} by {activity.student.name} "
+                f"on {activity.borrowed_date.strftime('%Y-%m-%d %H:%M:%S')}{return_info}"
             )
 
         # Get most borrowed books - updated to include more details
@@ -1302,6 +1309,15 @@ def admin_dashboard(request):
                 'borrow_count': item['borrow_count']
             })
         
+        # Get available books for add borrowing form
+        available_books = Book.objects.filter(is_available=True).order_by('title')
+        
+        # Get all books for the book management section
+        books = Book.objects.all().order_by('title')
+        
+        # Log the number of available books
+        logger.info(f"Found {available_books.count()} available books for borrowing form")
+        
         context = {
             'total_books': total_books,
             'total_students': total_students,
@@ -1311,9 +1327,12 @@ def admin_dashboard(request):
             'recent_registrations': recent_registrations,
             'current_logins': current_logins,
             'now': timezone.now(),
+            'today': timezone.now().date(),
             'recently_detected': recently_detected,
             'recent_activities': recent_activities,
-            'most_borrowed': most_borrowed_formatted
+            'most_borrowed': most_borrowed_formatted,
+            'available_books': available_books,
+            'books': books
         }
         
         # Add meta refresh header to auto-refresh the dashboard
@@ -1325,3 +1344,272 @@ def admin_dashboard(request):
         logger.error(f"Error in admin dashboard: {str(e)}")
         messages.error(request, "An error occurred while loading the dashboard")
         return redirect('home')
+
+@login_required(login_url='admin_login')
+def add_user(request):
+    """Add a new user/student from the admin dashboard"""
+    if not request.user.is_staff:
+        messages.error(request, "You don't have permission to add users")
+        return redirect('admin_dashboard')
+    
+    if request.method == 'POST':
+        try:
+            name = request.POST.get('name')
+            student_id = request.POST.get('student_id')
+            face_verified = 'face_verified' in request.POST
+            
+            # Check if student already exists
+            if Student.objects.filter(student_id=student_id).exists():
+                messages.error(request, f"Student with ID {student_id} already exists")
+                return redirect('admin_dashboard')
+            
+            # Create new student
+            student = Student(
+                name=name,
+                student_id=student_id,
+                face_verified=face_verified,
+                registered_at=timezone.now()
+            )
+            
+            # Handle face image if provided
+            if 'face_image' in request.FILES:
+                student.face_image = request.FILES['face_image']
+            
+            student.save()
+            messages.success(request, f"Student {name} added successfully")
+            
+        except Exception as e:
+            ErrorHandler.handle_error(e, "Adding user")
+            messages.error(request, f"Error adding student: {str(e)}")
+            
+    return redirect('admin_dashboard')
+
+@login_required(login_url='admin_login')
+def add_book(request):
+    """Add a new book from the admin dashboard"""
+    if not request.user.is_staff:
+        messages.error(request, "You don't have permission to add books")
+        return redirect('admin_dashboard')
+    
+    if request.method == 'POST':
+        try:
+            title = request.POST.get('title')
+            author = request.POST.get('author')
+            tag_id = request.POST.get('tag_id')
+            
+            # Create new book
+            book = Book(
+                title=title,
+                author=author,
+                is_available=True,
+                last_detected=timezone.now()
+            )
+            
+            # Add tag ID if provided
+            if tag_id:
+                try:
+                    book.tag_id = int(tag_id)
+                except ValueError:
+                    messages.warning(request, "Invalid tag ID format, saving book without tag ID")
+            
+            # Handle cover image if provided
+            if 'cover_image' in request.FILES:
+                book.cover_image = request.FILES['cover_image']
+            
+            book.save()
+            messages.success(request, f"Book '{title}' added successfully")
+            
+        except Exception as e:
+            ErrorHandler.handle_error(e, "Adding book")
+            messages.error(request, f"Error adding book: {str(e)}")
+            
+    return redirect('admin_dashboard')
+
+@login_required(login_url='admin_login')
+def add_borrowing(request):
+    """Add a new borrowing record from the admin dashboard"""
+    if not request.user.is_staff:
+        messages.error(request, "You don't have permission to add borrowing records")
+        return redirect('admin_dashboard')
+    
+    if request.method == 'POST':
+        try:
+            book_id = request.POST.get('book_id')
+            student_id = request.POST.get('student_id')
+            borrowed_date_str = request.POST.get('borrowed_date')
+            
+            # Get book and student objects
+            book = Book.objects.get(id=book_id)
+            student = Student.objects.get(id=student_id)
+            
+            # Parse borrowed date or use today's date
+            try:
+                borrowed_date = timezone.datetime.strptime(borrowed_date_str, '%Y-%m-%d').date()
+            except (ValueError, TypeError):
+                borrowed_date = timezone.now().date()
+            
+            # Set due date to 14 days after borrow date
+            due_date = borrowed_date + timezone.timedelta(days=14)
+            
+            # Create borrowing record
+            borrow_record = BorrowedBook.objects.create(
+                book=book,
+                student=student,
+                borrowed_date=borrowed_date,
+                due_date=due_date,
+                is_returned=False
+            )
+            
+            # Update book status
+            book.is_available = False
+            book.last_borrowed = timezone.now()
+            book.save()
+            
+            messages.success(request, f"Borrowing record created: {book.title} borrowed by {student.name}")
+            
+        except Book.DoesNotExist:
+            messages.error(request, "Selected book not found")
+        except Student.DoesNotExist:
+            messages.error(request, "Selected student not found")
+        except Exception as e:
+            ErrorHandler.handle_error(e, "Adding borrowing record")
+            messages.error(request, f"Error adding borrowing record: {str(e)}")
+            
+    return redirect('admin_dashboard')
+
+@login_required(login_url='admin_login')
+def edit_student(request, student_id):
+    """Edit a student record from the admin dashboard"""
+    if not request.user.is_staff:
+        messages.error(request, "You don't have permission to edit student records")
+        return redirect('admin_dashboard')
+    
+    try:
+        student = Student.objects.get(id=student_id)
+        
+        if request.method == 'POST':
+            # Update student data
+            student.name = request.POST.get('name', student.name)
+            student.student_id = request.POST.get('student_id', student.student_id)
+            
+            # Optional fields
+            if 'first_name' in request.POST:
+                student.first_name = request.POST.get('first_name')
+            if 'last_name' in request.POST:
+                student.last_name = request.POST.get('last_name')
+            if 'course' in request.POST:
+                student.course = request.POST.get('course')
+                
+            # Handle face verification checkbox
+            student.face_verified = 'face_verified' in request.POST
+            
+            # Process face image if provided
+            if 'face_image' in request.FILES:
+                # Delete old image if it exists
+                if student.face_image:
+                    try:
+                        old_image_path = os.path.join(settings.MEDIA_ROOT, str(student.face_image))
+                        if os.path.exists(old_image_path):
+                            os.remove(old_image_path)
+                    except Exception as e:
+                        logger.error(f"Error deleting old face image: {str(e)}")
+                
+                # Save new image
+                student.face_image = request.FILES['face_image']
+            
+            # Save changes
+            student.save()
+            messages.success(request, f"Student {student.name} updated successfully")
+            return redirect('admin_dashboard')
+            
+        # For GET requests, just return JSON data for the modal
+        student_data = {
+            'id': student.id,
+            'name': student.name,
+            'student_id': student.student_id,
+            'first_name': student.first_name or '',
+            'last_name': student.last_name or '',
+            'course': student.course or '',
+            'face_verified': student.face_verified,
+            'has_face_image': bool(student.face_image),
+        }
+        
+        return JsonResponse({'student': student_data})
+        
+    except Student.DoesNotExist:
+        messages.error(request, "Student not found")
+        return redirect('admin_dashboard')
+    except Exception as e:
+        ErrorHandler.handle_error(e, "Editing student")
+        messages.error(request, f"Error editing student: {str(e)}")
+        return redirect('admin_dashboard')
+
+@login_required(login_url='admin_login')
+def edit_book(request, book_id):
+    """Edit a book record from the admin dashboard"""
+    if not request.user.is_staff:
+        messages.error(request, "You don't have permission to edit book records")
+        return redirect('admin_dashboard')
+    
+    try:
+        book = Book.objects.get(id=book_id)
+        
+        if request.method == 'POST':
+            # Update book data
+            book.title = request.POST.get('title', book.title)
+            book.author = request.POST.get('author', book.author)
+            
+            # Optional fields
+            if 'tag_id' in request.POST and request.POST.get('tag_id'):
+                try:
+                    book.tag_id = int(request.POST.get('tag_id'))
+                except ValueError:
+                    messages.warning(request, "Invalid tag ID format, not updating tag ID")
+                    
+            if 'isbn' in request.POST:
+                book.isbn = request.POST.get('isbn')
+            if 'genre' in request.POST:
+                book.genre = request.POST.get('genre')
+            if 'description' in request.POST:
+                book.description = request.POST.get('description')
+                
+            # Process cover image if provided
+            if 'cover_image' in request.FILES:
+                # Delete old image if it exists
+                if book.cover_image:
+                    try:
+                        old_image_path = os.path.join(settings.MEDIA_ROOT, str(book.cover_image))
+                        if os.path.exists(old_image_path):
+                            os.remove(old_image_path)
+                    except Exception as e:
+                        logger.error(f"Error deleting old cover image: {str(e)}")
+                
+                # Save new image
+                book.cover_image = request.FILES['cover_image']
+            
+            # Save changes
+            book.save()
+            messages.success(request, f"Book '{book.title}' updated successfully")
+            return redirect('admin_dashboard')
+            
+        # For GET requests, just return JSON data for the modal
+        book_data = {
+            'id': book.id,
+            'title': book.title,
+            'author': book.author,
+            'tag_id': book.tag_id,
+            'isbn': book.isbn or '',
+            'genre': book.genre or '',
+            'description': book.description or '',
+            'has_cover_image': bool(book.cover_image),
+        }
+        
+        return JsonResponse({'book': book_data})
+        
+    except Book.DoesNotExist:
+        messages.error(request, "Book not found")
+        return redirect('admin_dashboard')
+    except Exception as e:
+        ErrorHandler.handle_error(e, "Editing book")
+        messages.error(request, f"Error editing book: {str(e)}")
+        return redirect('admin_dashboard')

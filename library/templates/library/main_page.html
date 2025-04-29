@@ -10,6 +10,14 @@
                     <h2 class="mb-0">Library Management System</h2>
                 </div>
                 <div class="card-body">
+                    <!-- Welcome user section -->
+                    <div class="alert alert-success mb-4">
+                        <h4 class="alert-heading">Welcome, {{ student_name }}!</h4>
+                        <p>Student ID: {{ student_id }}</p>
+                        <hr>
+                        <p class="mb-0">What would you like to do today?</p>
+                    </div>
+                    
                     <div class="d-grid gap-3">
                         <a href="{% url 'camera_feed' %}?type=borrow" class="btn btn-success btn-lg">
                             <i class="fas fa-book"></i> Borrow Book
@@ -20,9 +28,40 @@
                         <a href="{% url 'recommendations' %}" class="btn btn-info btn-lg text-white">
                             <i class="fas fa-lightbulb"></i> Book Recommendations
                         </a>
+                        
+                        <!-- Logout button -->
+                        <form method="post" action="{% url 'student_logout' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-secondary btn-lg w-100">
+                                <i class="fas fa-sign-out-alt"></i> Logout
+                            </button>
+                        </form>
                     </div>
                 </div>
             </div>
+            
+            <!-- Borrowed books section if any -->
+            {% if borrowed_books %}
+            <div class="card shadow mt-4">
+                <div class="card-header bg-info text-white">
+                    <h3 class="mb-0">Your Borrowed Books</h3>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        {% for borrowed in borrowed_books %}
+                        <div class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">{{ borrowed.book.title }}</h5>
+                                <small>Borrowed on: {{ borrowed.borrowed_date|date:"M d, Y" }}</small>
+                            </div>
+                            <p class="mb-1">Author: {{ borrowed.book.author }}</p>
+                            <small class="text-danger">Due date: {{ borrowed.due_date|date:"M d, Y" }}</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
